@@ -1,0 +1,13 @@
+- name: Instalar pacotes básicos
+  apt:
+    name:
+      - tree
+      - net-tools
+      - dnsutils
+      - tcpdump
+      - curl
+      - jq
+      - unzip
+      - git
+    state: present
+    update_cache: true

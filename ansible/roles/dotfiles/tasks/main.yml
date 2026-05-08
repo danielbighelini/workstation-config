@@ -1,0 +1,31 @@
+- name: Criar symlink .bashrc
+  file:
+    src: "{{ workstation_repo }}/dotfiles/bash/.bashrc"
+    dest: "{{ ansible_facts.env.HOME }}/.bashrc"
+    state: link
+    force: true
+    follow: false
+
+- name: Criar symlink .profile
+  file:
+    src: "{{ workstation_repo }}/dotfiles/bash/.profile"
+    dest: "{{ ansible_facts.env.HOME }}/.profile"
+    state: link
+    force: true
+    follow: false
+
+- name: Criar symlink .bash_aliases
+  file:
+    src: "{{ workstation_repo }}/dotfiles/bash/.bash_aliases"
+    dest: "{{ ansible_facts.env.HOME }}/.bash_aliases"
+    state: link
+    force: true
+    follow: false
+
+- name: Criar symlink .gitconfig
+  file:
+    src: "{{ workstation_repo }}/dotfiles/git/.gitconfig"
+    dest: "{{ ansible_facts.env.HOME }}/.gitconfig"
+    state: link
+    force: true
+    follow: false

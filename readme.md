@@ -1,48 +1,26 @@
 # Workstation Config
 
-Repositório para provisionamento e padronização do meu ambiente Linux/WSL2 utilizando:
-
-- WSL2
-- Ubuntu LTS
-- Ansible
-- Git
-- Bootstrap scripts
+Repositório para provisionamento e padronização do ambiente Linux/WSL2 usando Ansible, dotfiles e scripts de bootstrap.
 
 O objetivo é manter uma workstation:
 
 - reproduzível
-- versionada
 - portátil
+- versionada
 - auditável
 - facilmente reconstruível
 
 ---
 
-# Objetivos
+# Visão Geral
 
-Este projeto busca:
+Este projeto centraliza a configuração do ambiente de desenvolvimento em uma única base de código.
+Ele combina:
 
-- Padronizar múltiplas workstations
-- Reduzir drift entre ambientes
-- Automatizar configuração de ferramentas
-- Versionar configuração pessoal/técnica
-- Permitir rebuild rápido do ambiente
-- Centralizar bootstrap e provisioning
-
----
-
-# Arquitetura
-
-A abordagem adotada é:
-
-- WSL2 como runtime Linux principal
-- Configuração declarativa via Ansible
-- Dotfiles versionados
-- Bootstrap mínimo e idempotente
-- Separação entre:
-  - laboratório
-  - configuração pessoal
-  - projetos
+- `bootstrap.sh` para instalação inicial de pacotes básicos
+- Ansible para provisionamento declarativo
+- dotfiles versionados em `dotfiles/`
+- um wrapper de conveniência em `scripts/provision.sh`
 
 ---
 
@@ -51,149 +29,187 @@ A abordagem adotada é:
 ```text
 workstation-config/
 ├── ansible/
+│   ├── ansible.cfg
+│   ├── inventory/
+│   │   └── hosts.yml
+│   ├── playbooks/
+│   │   └── workstation.yml
+│   └── roles/
+│       ├── common/
+│       │   └── tasks/main.yml
+│       ├── dotfiles/
+│       │   └── tasks/main.yml
+│       ├── docker/
+│       │   └── tasks/main.yml
+│       └── shell/
+│           └── tasks/
 ├── dotfiles/
-├── scripts/
+│   ├── bash/
+│   │   ├── .bashrc
+│   │   └── .profile
+│   └── git/
+│       └── .gitconfig
 ├── docs/
+├── scripts/
+│   └── provision.sh
 ├── bootstrap.sh
+├── .gitignore
 └── README.md
 ```
 
 ---
 
-# Pré-requisitos
+# Componentes Principais
 
-## Windows
+## `bootstrap.sh`
 
-- Windows 11
-- WSL2 habilitado
-- Virtual Machine Platform habilitado
+Instala as dependências iniciais no sistema:
 
-## Linux
+- git
+- curl
+- wget
+- unzip
+- python3
+- python3-pip
+- ansible
+- vim
+- tmux
+- jq
+- htop
 
-Distribuição recomendada:
+## `ansible/ansible.cfg`
 
-- Ubuntu 24.04 LTS
+Configura o Ansible para usar:
 
----
+- inventário local
+- `roles_path` em `./roles`
+- `host_key_checking = False`
+- `retry_files_enabled = False`
+- saída em YAML
+- Python 3 como interpretador padrão
 
-# Instalação Inicial
-
-## Instalar WSL2
-
-```powershell
-wsl --install -d Ubuntu-24.04
-```
-
----
-
-# Configuração SSH
-
-## Gerar chave SSH
-
-```bash
-ssh-keygen -t ed25519 -C "seu_email"
-```
-
-## Testar autenticação
-
-```bash
-ssh -T git@github.com
-```
+> Nota: o arquivo de inventário atual está em `ansible/inventory/hosts.yml`.
+> Se o Ansible não localizar o inventário automaticamente, execute o playbook com:
+>
+> ```bash
+> sudo ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/workstation.yml
+> ```
 
 ---
 
-# Clone do Repositório
+## Ansible Playbook Principal
+
+`ansible/playbooks/workstation.yml` define a execução local no host `localhost` e registra o repositório em:
+
+```yaml
+workstation_repo: "{{ ansible_facts.env.HOME }}/workspace/workstation-config"
+```
+
+O playbook aplica os roles:
+
+- `common`
+- `dotfiles`
+- `docker`
+
+O role `shell` existe na estrutura, mas ainda não contém tarefas definidas.
+
+---
+
+# O que o Ansible faz hoje
+
+## `ansible/roles/common/tasks/main.yml`
+
+Instala os pacotes básicos:
+
+- tree
+- net-tools
+- dnsutils
+- tcpdump
+- curl
+- jq
+- unzip
+- git
+
+## `ansible/roles/docker/tasks/main.yml`
+
+Provisiona o Docker Engine no Ubuntu:
+
+- cria `/etc/apt/keyrings`
+- adiciona chave GPG do Docker
+- adiciona repositório oficial do Docker
+- instala:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+- inicia e habilita o serviço Docker
+- adiciona o usuário atual ao grupo `docker`
+- exibe a versão instalada do Docker
+
+## `ansible/roles/dotfiles/tasks/main.yml`
+
+Cria symlinks para os arquivos de configuração do usuário:
+
+- `~/.bashrc` → `dotfiles/bash/.bashrc`
+- `~/.profile` → `dotfiles/bash/.profile`
+- `~/.bash_aliases` → `dotfiles/bash/.bash_aliases` (adicione este arquivo se desejar aliases personalizados)
+- `~/.gitconfig` → `dotfiles/git/.gitconfig`
+
+---
+
+# Dotfiles
+
+Os arquivos versionados atualmente são:
+
+- `dotfiles/bash/.bashrc`
+- `dotfiles/bash/.profile`
+- `dotfiles/git/.gitconfig`
+
+Se quiser adicionar aliases permanentes, crie `dotfiles/bash/.bash_aliases`.
+
+---
+
+# Uso
+
+## Clonar o repositório
 
 ```bash
 git clone git@github.com:SEU_USUARIO/workstation-config.git
+cd workstation-config
 ```
 
----
-
-# Bootstrap Inicial
+## Executar bootstrap inicial
 
 ```bash
-cd workstation-config
-
 chmod +x bootstrap.sh
-
 ./bootstrap.sh
 ```
 
----
-
-# Provisionamento Ansible
-
-Atualmente o provisioning local é executado com:
+## Executar provisionamento Ansible
 
 ```bash
 sudo ansible-playbook ansible/playbooks/workstation.yml
 ```
 
----
-
-# Workflow Operacional
-
-## Atualizar repositório
+ou, opcionalmente:
 
 ```bash
-git pull
-```
-
-## Executar provisioning
-
-```bash
-sudo ansible-playbook ansible/playbooks/workstation.yml
+./scripts/provision.sh
 ```
 
 ---
 
-# Convenções
+# Recomendações de manutenção
 
-## Workspace
-
-Todos os projetos ficam preferencialmente em:
-
-```text
-~/workspace
-```
-
-## Separação de responsabilidades
-
-| Diretório --| Objetivo |
-|-------------|----------|
-| ansible-lab | laboratório/estudos |
-| workstation-config | configuração da workstation |
-| projetos | projetos gerais |
+- Mantenha o repositório atualizado com `git pull`
+- Atualize os dotfiles e role de Ansible juntos
+- Verifique se o inventário está no caminho correto antes de rodar o playbook
 
 ---
 
-# Troubleshooting
+# Observações
 
-## WSL consumindo muita memória
-
-```powershell
-wsl --shutdown
-```
-
-## Reiniciar ambiente WSL
-
-```powershell
-wsl --shutdown
-```
-
----
-
-# Roadmap
-
-Itens planejados:
-
-- [ ] Dotfiles automatizados
-- [ ] Symlinks gerenciados via Ansible
-- [ ] Docker provisioning
-- [ ] Dev Containers
-- [ ] VSCode automation
-- [ ] Multi-workstation profiles
-- [ ] Secrets management
-- [ ] Backup strategy
-- [ ] Shell customization
+- O role `shell` existe, mas atualmente não possui tarefas configuradas.
+- A documentação em `docs/` está disponível para expandir com guias adicionais.
+- O `.gitignore` já ignora arquivos de cache, logs, dados do Ansible, VS Code e arquivos temporários de sistema.

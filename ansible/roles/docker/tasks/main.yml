@@ -1,0 +1,59 @@
+- name: Criar diretório keyrings
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Adicionar chave GPG Docker
+  shell: |
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+    gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  args:
+    creates: /etc/apt/keyrings/docker.gpg
+
+- name: Adicionar repositório Docker
+  apt_repository:
+    repo: >-
+      deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg]
+      https://download.docker.com/linux/ubuntu
+      {{ ansible_facts.distribution_release }} stable
+    state: present
+    filename: docker
+
+- name: Instalar Docker Engine
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+    update_cache: true
+
+- name: Garantir Docker iniciado
+  service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Adicionar usuário ao grupo docker
+  user:
+    name: "{{ ansible_facts.user_id }}"
+    groups: docker
+    append: true
+  register: docker_group_result
+
+- name: Mostrar alteração grupo docker
+  debug:
+    msg: "Usuário adicionado ao grupo docker"
+  when: docker_group_result.changed
+  
+- name: Validar Docker instalado
+  command: docker --version
+  register: docker_version
+  changed_when: false
+
+- name: Mostrar versão Docker
+  debug:
+    var: docker_version.stdout

@@ -5,38 +5,7 @@
   vars:
     workstation_repo: "{{ ansible_facts.env.HOME }}/workspace/workstation-config"
 
-  tasks:
-
-    - name: Instalar pacotes básicos
-      apt:
-        name:
-          - tree
-          - net-tools
-          - dnsutils
-          - tcpdump
-        state: present
-        update_cache: true
-
-    - name: Criar symlink .bashrc
-      file:
-        src: "{{ workstation_repo }}/dotfiles/bash/.bashrc"
-        dest: "{{ ansible_facts.env.HOME }}/.bashrc"
-        state: link
-        force: true
-        follow: false
-
-    - name: Criar symlink .profile
-      file:
-        src: "{{ workstation_repo }}/dotfiles/bash/.profile"
-        dest: "{{ ansible_facts.env.HOME }}/.profile"
-        state: link
-        force: true
-        follow: false
-
-    - name: Criar symlink .gitconfig
-      file:
-        src: "{{ workstation_repo }}/dotfiles/git/.gitconfig"
-        dest: "{{ ansible_facts.env.HOME }}/.gitconfig"
-        state: link
-        force: true
-        follow: false
+  roles:
+    - common
+    - dotfiles
+    - docker
