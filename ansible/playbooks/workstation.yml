@@ -1,0 +1,15 @@
+- name: Configurar workstation
+  hosts: localhost
+  connection: local
+
+  tasks:
+
+    - name: Instalar pacotes básicos
+      apt:
+        name:
+          - tree
+          - net-tools
+          - dnsutils
+          - tcpdump
+        state: present
+        update_cache: true
