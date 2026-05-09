@@ -112,10 +112,7 @@ workstation-config/
 │       │   ├── defaults/main.yml
 │       │   ├── meta/main.yml
 │       │   └── tasks/main.yml
-│       └── user_vscode/
-│           ├── defaults/main.yml
-│           ├── meta/main.yml
-│           └── tasks/main.yml
+
 ├── dotfiles/
 │   ├── bash/
 │   │   ├── .bashrc
@@ -127,6 +124,11 @@ workstation-config/
 ├── scripts/
 │   ├── bootstrap.sh
 │   └── provision.sh
+├── windows/
+│   ├── bootstrap.ps1
+│   ├── install-packages.ps1
+│   ├── install-wsl.ps1
+│   └── README.md
 ├── .gitignore
 └── README.md
 ```
@@ -328,7 +330,6 @@ Playbook principal da workstation.
 
   roles:
     - role: user_dotfiles
-    - role: user_vscode
     - role: user_tooling
 ```
 
@@ -410,30 +411,6 @@ dotfiles/
 └── git/
 ```
 
-## `user_vscode`
-
-Configura extensões do VS Code para desenvolvimento.
-
-### Pré-requisitos
-
-* VS Code instalado
-* Conexão WSL/Remote SSH estabelecida pelo menos uma vez
-
-### Funcionalidades
-
-* localiza binário da CLI do VS Code Remote
-* obtém lista de extensões instaladas
-* instala extensões essenciais ausentes
-
-### Extensões instaladas
-
-* `ms-vscode-remote.remote-wsl`
-* `redhat.ansible`
-* `redhat.vscode-yaml`
-* `ms-python.python`
-* `github.copilot`
-* `eamodio.gitlens`
-
 ## `user_tooling`
 
 Instala ferramentas de desenvolvimento Python e hook de git no contexto do usuário.
@@ -483,11 +460,44 @@ logs/
 
 ---
 
+# Windows Setup
+
+Para usuários Windows, o projeto inclui scripts PowerShell para pre-bootstrap no host antes de instalar o WSL2.
+
+## Scripts Disponíveis
+
+* `windows/bootstrap.ps1`: Instala dependências base no Windows.
+* `windows/install-packages.ps1`: Instala ferramentas adicionais.
+* `windows/install-wsl.ps1`: Instala e configura WSL2 automaticamente.
+
+## Como Usar
+
+Execute os scripts em ordem no PowerShell como administrador:
+
+```powershell
+.\windows\bootstrap.ps1
+.\windows\install-packages.ps1
+.\windows\install-wsl.ps1
+```
+
+Isso prepara o host Windows para o ambiente WSL2.
+
+---
+
 # Como Usar
 
-## 1. Instalar WSL2
+## 1. Preparar Windows (Opcional)
 
-No Windows:
+Para setup automático com PowerShell:
+
+```powershell
+cd workstation-config
+.\windows\bootstrap.ps1
+.\windows\install-packages.ps1
+.\windows\install-wsl.ps1
+```
+
+Ou instalar WSL2 manualmente:
 
 ```powershell
 wsl --install
@@ -572,7 +582,6 @@ Não representa necessariamente o modelo ideal para ambientes enterprise multius
 ## Curto prazo
 
 * adicionar novas roles
-* instalar VS Code automaticamente
 * expandir catálogo declarativo de extensões VSCode
 * configurar workspace settings do VS Code
 * adicionar role Kubernetes
@@ -591,6 +600,12 @@ Não representa necessariamente o modelo ideal para ambientes enterprise multius
 * integração cloud-init/Packer
 * suporte multiplataforma
 * golden images
+
+---
+
+# Documentação Adicional
+
+* [Windows Setup Guide](./windows/README.md) - Scripts PowerShell para setup nativo Windows
 
 ---
 
