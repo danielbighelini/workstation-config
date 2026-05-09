@@ -27,6 +27,7 @@ Em vez de configurar manualmente:
 * shell
 * pacotes
 * Docker
+* PowerShell
 * aliases
 * Git
 * ferramentas de desenvolvimento
@@ -51,8 +52,8 @@ O projeto é dividido em duas camadas principais:
 
 | Camada                   | Responsabilidade                           |
 | ------------------------ | ------------------------------------------ |
-| `bootstrap.sh`           | Instala dependências mínimas do sistema    |
-| `provision.sh` + Ansible | Provisionamento declarativo da workstation |
+| `scripts/bootstrap.sh`   | Instala dependências mínimas do sistema    |
+| `scripts/provision.sh`   | Executa o Ansible com inventories e logging |
 
 ---
 
@@ -99,7 +100,15 @@ workstation-config/
 │       │   ├── handlers/main.yml
 │       │   ├── meta/main.yml
 │       │   └── tasks/main.yml
+│       ├── system_powershell/
+│       │   ├── defaults/main.yml
+│       │   ├── meta/main.yml
+│       │   └── tasks/main.yml
 │       ├── user_dotfiles/
+│       │   ├── defaults/main.yml
+│       │   ├── meta/main.yml
+│       │   └── tasks/main.yml
+│       ├── user_tooling/
 │       │   ├── defaults/main.yml
 │       │   ├── meta/main.yml
 │       │   └── tasks/main.yml
@@ -126,9 +135,9 @@ workstation-config/
 
 Diretório local do Ansible para armazenar:
 
-* **collections/**: Coleções Ansible Galaxy instaladas localmente
-* **modules/**: Módulos customizados
-* **roles/**: Roles Ansible Galaxy instaladas localmente
+* `collections/`: coleções Ansible Galaxy instaladas localmente
+* `modules/`: módulos customizados
+* `roles/`: roles Ansible Galaxy instaladas localmente
 
 Este diretório permite isolamento de dependências Ansible específicas do projeto.
 
@@ -182,7 +191,7 @@ Responsabilidades:
 * seleção dinâmica de inventory
 * logging persistente
 * carregamento explícito do `ansible.cfg`
-* controle do contexto de execução
+* preservação do contexto do usuário real (`sudo`)
 * execução do playbook principal
 
 ### Características
@@ -190,7 +199,7 @@ Responsabilidades:
 * suporte a múltiplos ambientes
 * logging por ambiente
 * resolução automática de paths
-* preservação do contexto do usuário (`sudo`)
+* preservação do contexto do usuário (`SUDO_USER`)
 * execução consistente do runtime Ansible
 
 ### Execução
@@ -221,6 +230,8 @@ Configuração central do runtime Ansible.
 | `roles_path`                  | localização das roles             |
 | `host_key_checking = False`   | desabilita validação SSH host key |
 | `retry_files_enabled = False` | desabilita retry files            |
+| `stdout_callback = default`   | saída padrão                      |
+| `result_format = yaml`        | formatação legível de resultados  |
 | `timeout`                     | timeout global                    |
 | `gather_timeout`              | timeout de facts                  |
 
@@ -231,12 +242,10 @@ Configuração central do runtime Ansible.
 
 inventory = ./inventories/localhost/hosts.yml
 roles_path = ./roles
-
 host_key_checking = False
 retry_files_enabled = False
-
 stdout_callback = default
-
+result_format = yaml
 timeout = 120
 gather_timeout = 60
 ```
@@ -290,7 +299,7 @@ Playbook principal da workstation.
 
 * execução local
 * carregamento das roles
-* definição de variáveis globais
+* definição de variáveis de repositório
 
 ### Estrutura atual
 
@@ -300,11 +309,12 @@ Playbook principal da workstation.
   connection: local
 
   vars:
-    workstation_repo: "{{ ansible_facts.env.HOME }}/workspace/workstation-config"
+    workstation_repo: "/home/{{ ansible_user }}/workspace/workstation-config"
 
   roles:
-    - system_common
-    - system_docker
+    - role: system_common
+    - role: system_docker
+    - role: system_powershell
 
 - name: Configurar user-space
   hosts: localhost
@@ -314,11 +324,12 @@ Playbook principal da workstation.
   become_user: "{{ ansible_user }}"
 
   vars:
-    workstation_repo: "/home/{{ ansible_user }}/workstation-config"
+    workstation_repo: "/home/{{ ansible_user }}/workspace/workstation-config"
 
   roles:
-    - user_dotfiles
-    - user_vscode
+    - role: user_dotfiles
+    - role: user_vscode
+    - role: user_tooling
 ```
 
 ---
@@ -345,8 +356,6 @@ Responsável por:
 * git
 * pipx
 
----
-
 ## `system_docker`
 
 Provisiona Docker Engine no Ubuntu.
@@ -357,7 +366,6 @@ Provisiona Docker Engine no Ubuntu.
 * adiciona chave GPG oficial Docker
 * adiciona repositório oficial Docker
 * instala:
-
   * docker-ce
   * docker-ce-cli
   * containerd.io
@@ -371,7 +379,17 @@ Provisiona Docker Engine no Ubuntu.
 
 * `Avisar necessidade de reiniciar sessão`: Notifica quando o usuário precisa reiniciar a sessão para aplicar mudanças no grupo docker
 
----
+## `system_powershell`
+
+Instala e valida o PowerShell no Ubuntu.
+
+### O que faz
+
+* instala dependências de repositório
+* baixa e registra o pacote Microsoft para APT
+* atualiza cache apt
+* instala `powershell`
+* valida a instalação e exibe a versão
 
 ## `user_dotfiles`
 
@@ -391,8 +409,6 @@ dotfiles/
 ├── bash/
 └── git/
 ```
-
----
 
 ## `user_vscode`
 
@@ -417,6 +433,21 @@ Configura extensões do VS Code para desenvolvimento.
 * `ms-python.python`
 * `github.copilot`
 * `eamodio.gitlens`
+
+## `user_tooling`
+
+Instala ferramentas de desenvolvimento Python e hook de git no contexto do usuário.
+
+### O que faz
+
+* valida se `pipx` está instalado
+* instala pacotes Python via `pipx`
+* instala hooks do `pre-commit` no repositório
+
+### Ferramentas instaladas
+
+* `pre-commit`
+* `ansible-lint`
 
 ---
 
@@ -499,7 +530,7 @@ sudo ./scripts/provision.sh
 
 ### Motivo
 
-No ambiente WSL/local workstation, o fluxo de `become` interativo do Ansible apresentou problemas de TTY/pseudo-terminal.
+No ambiente WSL/local workstation, o fluxo de `become` interativo do Ansible pode apresentar problemas de TTY/pseudo-terminal.
 
 A solução adotada:
 

@@ -120,8 +120,7 @@ Provisiona ferramentas Windows utilizando `winget`.
 Os scripts devem ser executados a partir do WSL utilizando:
 
 ```bash
-pwsh.exe -ExecutionPolicy Bypass \
-  -File windows/bootstrap.ps1
+pwsh.exe -ExecutionPolicy Bypass -File windows/bootstrap.ps1
 ```
 
 ---

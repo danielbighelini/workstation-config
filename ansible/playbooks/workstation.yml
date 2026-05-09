@@ -23,5 +23,4 @@
 
   roles:
     - role: user_dotfiles
-    - role: user_vscode
     - role: user_tooling
