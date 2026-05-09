@@ -3,6 +3,7 @@
 # =========================
 *.retry
 .ansible/
+ansible/.ansible/
 
 # Vault / secrets
 .vault_pass
@@ -45,3 +46,5 @@ Thumbs.db
 # Docker
 # =========================
 *.tar
+
+*.deb

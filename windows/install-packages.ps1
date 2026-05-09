@@ -1,6 +1,27 @@
+param (
+    [string]$LogFile
+)
+
 $ErrorActionPreference = "Stop"
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+function Write-Log {
+
+    param (
+        [string]$Message
+    )
+
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
+    $line = "[$timestamp] $Message"
+
+    Write-Host $line
+
+    Add-Content `
+        -Path $LogFile `
+        -Value $line
+}
 
 $packages = @(
     "Microsoft.VisualStudioCode"
@@ -13,11 +34,9 @@ $vscodeExtensions = @(
     "ms-vscode-remote.remote-wsl"
 )
 
-Write-Host ""
-Write-Host "========================================="
-Write-Host " Validacao de pacotes Windows"
-Write-Host "========================================="
-Write-Host ""
+Write-Log "========================================="
+Write-Log " Validacao de pacotes Windows"
+Write-Log "========================================="
 
 Set-Location C:\
 
@@ -27,13 +46,11 @@ foreach ($package in $packages) {
 
     if ($installed) {
 
-        Write-Host "[OK] $package ja instalado."
+        Write-Log "[OK] $package ja instalado."
         continue
     }
 
-    Write-Host ""
-    Write-Host "Instalando $package ..."
-    Write-Host ""
+    Write-Log "Instalando $package ..."
 
     winget install `
         --id $package `
@@ -43,11 +60,9 @@ foreach ($package in $packages) {
         --accept-source-agreements
 }
 
-Write-Host ""
-Write-Host "========================================="
-Write-Host " Validacao extensoes VSCode"
-Write-Host "========================================="
-Write-Host ""
+Write-Log "========================================="
+Write-Log " Validacao extensoes VSCode"
+Write-Log "========================================="
 
 foreach ($extension in $vscodeExtensions) {
 
@@ -57,13 +72,11 @@ foreach ($extension in $vscodeExtensions) {
 
     if ($installed) {
 
-        Write-Host "[OK] Extensao $extension ja instalada."
+        Write-Log "[OK] Extensao $extension ja instalada."
         continue
     }
 
-    Write-Host ""
-    Write-Host "Instalando extensao $extension ..."
-    Write-Host ""
+    Write-Log "Instalando extensao $extension ..."
 
     code --install-extension $extension
 }

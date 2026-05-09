@@ -1,31 +1,46 @@
+param (
+    [string]$LogFile
+)
+
 $ErrorActionPreference = "Stop"
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-Write-Host ""
-Write-Host "========================================="
-Write-Host " Validação WSL2"
-Write-Host "========================================="
-Write-Host ""
+function Write-Log {
+
+    param (
+        [string]$Message
+    )
+
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
+    $line = "[$timestamp] $Message"
+
+    Write-Host $line
+
+    Add-Content `
+        -Path $LogFile `
+        -Value $line
+}
+
+Write-Log "========================================="
+Write-Log " Validacao WSL2"
+Write-Log "========================================="
 
 try {
 
     $null = wsl --status
 
-    Write-Host "WSL já está instalado."
-    Write-Host ""
+    Write-Log "WSL ja esta instalado."
 
 }
 catch {
 
-    Write-Host "WSL não encontrado."
-    Write-Host "Instalando WSL2..."
-    Write-Host ""
+    Write-Log "WSL nao encontrado."
+    Write-Log "Instalando WSL2..."
 
     wsl --install
 
-    Write-Host ""
-    Write-Host "Instalação do WSL concluída."
-    Write-Host "Pode ser necessário reiniciar o Windows."
-    Write-Host ""
+    Write-Log "Instalacao do WSL concluida."
+    Write-Log "Pode ser necessario reiniciar o Windows."
 }

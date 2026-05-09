@@ -13,9 +13,22 @@ repos:
     hooks:
       - id: ansible-lint
         name: ansible-lint
-        entry: bash -c 'cd ansible && ansible-lint'
+
+        entry: >-
+          bash -c '
+          export XDG_CACHE_HOME="$HOME/.cache" &&
+          export ANSIBLE_HOME="$HOME/.cache/ansible" &&
+          export ANSIBLE_LOCAL_TEMP="$HOME/.cache/ansible/tmp" &&
+          export ANSIBLE_REMOTE_TEMP="$HOME/.cache/ansible/tmp" &&
+          mkdir -p "$HOME/.cache/ansible/tmp" &&
+          cd ansible &&
+          ansible-lint
+          '
+
         language: system
+
         pass_filenames: false
+
         files: ^ansible/
 
   - repo: https://github.com/adrienverge/yamllint

@@ -1,0 +1,11 @@
+---
+exclude_paths:
+  - .ansible/
+
+mock_modules: []
+
+mock_roles: []
+
+use_default_rules: true
+
+offline: true
