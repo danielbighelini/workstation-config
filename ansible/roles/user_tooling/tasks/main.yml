@@ -30,3 +30,13 @@
     chdir: "{{ workstation_repo }}"
 
   changed_when: false
+
+- name: Instalar ansible-lint
+  community.general.pipx:
+    name: ansible-lint
+    state: present
+
+- name: Instalar yamllint
+  community.general.pipx:
+    name: yamllint
+    state: present

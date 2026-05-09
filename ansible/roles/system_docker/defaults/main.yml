@@ -1,5 +1,12 @@
 ---
 # defaults file for system_docker role
+
+system_docker_distribution: >-
+  {{ ansible_distribution | lower }}
+
+system_docker_release: >-
+  {{ ansible_distribution_release }}
+
 system_docker_packages:
   - docker-ce
   - docker-ce-cli
@@ -7,8 +14,10 @@ system_docker_packages:
   - docker-buildx-plugin
   - docker-compose-plugin
 
-system_docker_gpg_url: https://download.docker.com/linux/ubuntu/gpg
+system_docker_gpg_url: >-
+  https://download.docker.com/linux/{{ system_docker_distribution }}/gpg
+
 system_docker_repo: >-
   deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg]
-  https://download.docker.com/linux/ubuntu
-  {{ ansible_facts.distribution_release }} stable
+  https://download.docker.com/linux/{{ system_docker_distribution }}
+  {{ system_docker_release }} stable

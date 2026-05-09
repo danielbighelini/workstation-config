@@ -14,10 +14,10 @@ ANSIBLE_DIR="${BASE_DIR}/ansible"
 ENVIRONMENT="${1:-localhost}"
 
 PLAYBOOK="playbooks/workstation.yml"
-INVENTORY="inventories/${ENVIRONMENT}/hosts.yml"
+INVENTORY="inventories/localhost/hosts.yml"
 
 LOG_DIR="${BASE_DIR}/logs"
-LOG_FILE="${LOG_DIR}/provision-${ENVIRONMENT}.log"
+LOG_FILE="${LOG_DIR}/provision-localhost.log"
 
 ################################################################################
 # USER CONTEXT
@@ -82,11 +82,20 @@ require_command python3
 # EXECUTION
 ################################################################################
 
-log "Ambiente selecionado: ${ENVIRONMENT}"
+log "Ambiente selecionado: localhost"
 
 log "Usuário real detectado: ${REAL_USER}"
 
 pushd "$ANSIBLE_DIR" >/dev/null
+export ANSIBLE_COLLECTIONS_PATH="$ANSIBLE_DIR/collections"
+
+log "Instalando collections Ansible"
+
+ANSIBLE_CONFIG=ansible.cfg \
+ansible-galaxy collection install \
+  -r collections/requirements.yml \
+  -p collections \
+  --force
 
 log "Executando provisionamento Ansible"
 
@@ -94,7 +103,9 @@ ANSIBLE_CONFIG=ansible.cfg \
 ansible-playbook \
   -i "$INVENTORY" \
   "$PLAYBOOK" \
-  -e ansible_user="$REAL_USER"
+  -e ansible_user="$REAL_USER" \
+  --ask-become-pass \
+  "$@"
 
 popd >/dev/null
 

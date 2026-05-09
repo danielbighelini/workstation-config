@@ -1,4 +1,6 @@
 ---
+exclude: ^ansible/collections/ansible_collections/
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -20,9 +22,11 @@ repos:
           export ANSIBLE_HOME="$HOME/.cache/ansible" &&
           export ANSIBLE_LOCAL_TEMP="$HOME/.cache/ansible/tmp" &&
           export ANSIBLE_REMOTE_TEMP="$HOME/.cache/ansible/tmp" &&
+          export ANSIBLE_CONFIG=ansible.cfg &&
+          export ANSIBLE_COLLECTIONS_PATH=./collections &&
           mkdir -p "$HOME/.cache/ansible/tmp" &&
           cd ansible &&
-          ansible-lint
+          ansible-lint playbooks roles
           '
 
         language: system

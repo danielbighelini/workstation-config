@@ -3,6 +3,8 @@
   hosts: localhost
   connection: local
 
+  become: true
+
   vars:
     workstation_repo: "/home/{{ ansible_user }}/workspace/workstation-config"
 
@@ -14,9 +16,6 @@
 - name: Configurar user-space
   hosts: localhost
   connection: local
-
-  become: true
-  become_user: "{{ ansible_user }}"
 
   vars:
     workstation_repo: "/home/{{ ansible_user }}/workspace/workstation-config"

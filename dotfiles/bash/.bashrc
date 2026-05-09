@@ -140,3 +140,5 @@ if [ ! -S "$SSH_AUTH_SOCK" ]; then
 fi
 
 ssh-add -l >/dev/null 2>&1 || ssh-add ~/.ssh/id_ed25519
+
+export PATH="$HOME/.local/bin:$PATH"

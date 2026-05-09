@@ -4,6 +4,7 @@
 *.retry
 .ansible/
 ansible/.ansible/
+ansible/collections/ansible_collections/
 
 # Vault / secrets
 .vault_pass

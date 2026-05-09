@@ -1,32 +1,35 @@
 ---
-- name: Instalar dependências PowerShell
+- name: Instalar dependencias PowerShell
+
   ansible.builtin.apt:
     name:
       - wget
       - apt-transport-https
-      - software-properties-common
 
     state: present
-
     update_cache: true
 
-- name: Baixar repositório Microsoft
+- name: Baixar repositorio Microsoft
+
   ansible.builtin.get_url:
     url: "{{ system_powershell_repo_url }}"
     dest: "{{ system_powershell_repo_package }}"
     mode: '0644'
 
-- name: Registrar repositório Microsoft
+- name: Registrar repositorio Microsoft
+
   ansible.builtin.command:
     cmd: dpkg -i {{ system_powershell_repo_package }}
 
   changed_when: false
 
 - name: Atualizar cache apt
+
   ansible.builtin.apt:
     update_cache: true
 
 - name: Instalar PowerShell
+
   ansible.builtin.apt:
     name: "{{ system_powershell_packages }}"
     state: present
@@ -36,9 +39,8 @@
     cmd: pwsh -Version
 
   register: system_powershell_version
-
   changed_when: false
 
-- name: Mostrar versão PowerShell
+- name: Mostrar versao PowerShell
   ansible.builtin.debug:
     var: system_powershell_version.stdout
