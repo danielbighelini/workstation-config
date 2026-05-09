@@ -1,0 +1,8 @@
+---
+user_vscode_extensions:
+  - ms-vscode-remote.remote-wsl
+  - redhat.ansible
+  - redhat.vscode-yaml
+  - ms-python.python
+  - github.copilot
+  - eamodio.gitlens

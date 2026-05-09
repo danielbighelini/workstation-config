@@ -4,11 +4,12 @@
   connection: local
 
   vars:
-    workstation_repo: "{{ ansible_facts.env.HOME }}/workspace/workstation-config"
+    workstation_repo: "/home/{{ ansible_user }}/workspace/workstation-config"
 
   roles:
-    - system-common
-    - system-docker
+    - role: system_common
+    - role: system_docker
+    - role: system_powershell
 
 - name: Configurar user-space
   hosts: localhost
@@ -18,8 +19,9 @@
   become_user: "{{ ansible_user }}"
 
   vars:
-    workstation_repo: "/home/{{ ansible_user }}/workstation-config"
+    workstation_repo: "/home/{{ ansible_user }}/workspace/workstation-config"
 
   roles:
-    - user-dotfiles
-    - user-vscode
+    - role: user_dotfiles
+    - role: user_vscode
+    - role: user_tooling

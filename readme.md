@@ -67,7 +67,7 @@ Clone do repositório
     ↓
 sudo ./scripts/bootstrap.sh
     ↓
-sudo -E ./scripts/provision.sh
+sudo ./scripts/provision.sh
     ↓
 Workstation provisionada
 ```
@@ -90,15 +90,20 @@ workstation-config/
 │   ├── playbooks/
 │   │   └── workstation.yml
 │   └── roles/
-│       ├── system-common/
+│       ├── system_common/
 │       │   ├── defaults/main.yml
 │       │   ├── meta/main.yml
 │       │   └── tasks/main.yml
-│       ├── user-dotfiles/
+│       ├── system_docker/
+│       │   ├── defaults/main.yml
+│       │   ├── handlers/main.yml
+│       │   ├── meta/main.yml
+│       │   └── tasks/main.yml
+│       ├── user_dotfiles/
 │       │   ├── defaults/main.yml
 │       │   ├── meta/main.yml
 │       │   └── tasks/main.yml
-│       └── system-docker/
+│       └── user_vscode/
 │           ├── defaults/main.yml
 │           ├── meta/main.yml
 │           └── tasks/main.yml
@@ -116,6 +121,16 @@ workstation-config/
 ├── .gitignore
 └── README.md
 ```
+
+### Diretório `.ansible/`
+
+Diretório local do Ansible para armazenar:
+
+* **collections/**: Coleções Ansible Galaxy instaladas localmente
+* **modules/**: Módulos customizados
+* **roles/**: Roles Ansible Galaxy instaladas localmente
+
+Este diretório permite isolamento de dependências Ansible específicas do projeto.
 
 ---
 
@@ -175,19 +190,19 @@ Responsabilidades:
 * suporte a múltiplos ambientes
 * logging por ambiente
 * resolução automática de paths
-* preservação do contexto do usuário (`sudo -E`)
+* preservação do contexto do usuário (`sudo`)
 * execução consistente do runtime Ansible
 
 ### Execução
 
 ```bash
-sudo -E ./scripts/provision.sh
+sudo ./scripts/provision.sh
 ```
 
 ### Ambiente customizado
 
 ```bash
-sudo -E ./scripts/provision.sh development
+sudo ./scripts/provision.sh development
 ```
 
 ---
@@ -249,6 +264,22 @@ Isso permite:
 
 ---
 
+# Variáveis Globais
+
+## `ansible/group_vars/all.yml`
+
+Variáveis aplicáveis a todos os hosts.
+
+### Configurações atuais
+
+```yaml
+---
+# Global variables for all hosts
+ansible_python_interpreter: /usr/bin/python3
+```
+
+---
+
 # Playbook Principal
 
 ## `ansible/playbooks/workstation.yml`
@@ -264,7 +295,7 @@ Playbook principal da workstation.
 ### Estrutura atual
 
 ```yaml
-- name: Configurar workstation
+- name: Configurar system-space
   hosts: localhost
   connection: local
 
@@ -272,16 +303,29 @@ Playbook principal da workstation.
     workstation_repo: "{{ ansible_facts.env.HOME }}/workspace/workstation-config"
 
   roles:
-    - system-common
-    - user-dotfiles
-    - system-docker
+    - system_common
+    - system_docker
+
+- name: Configurar user-space
+  hosts: localhost
+  connection: local
+
+  become: true
+  become_user: "{{ ansible_user }}"
+
+  vars:
+    workstation_repo: "/home/{{ ansible_user }}/workstation-config"
+
+  roles:
+    - user_dotfiles
+    - user_vscode
 ```
 
 ---
 
 # Roles
 
-## `system-common`
+## `system_common`
 
 Responsável por:
 
@@ -299,10 +343,11 @@ Responsável por:
 * jq
 * unzip
 * git
+* pipx
 
 ---
 
-## `system-docker`
+## `system_docker`
 
 Provisiona Docker Engine no Ubuntu.
 
@@ -322,9 +367,13 @@ Provisiona Docker Engine no Ubuntu.
 * adiciona usuário ao grupo `docker`
 * valida instalação
 
+### Handlers
+
+* `Avisar necessidade de reiniciar sessão`: Notifica quando o usuário precisa reiniciar a sessão para aplicar mudanças no grupo docker
+
 ---
 
-## `user-dotfiles`
+## `user_dotfiles`
 
 Gerencia configuração do usuário.
 
@@ -342,6 +391,32 @@ dotfiles/
 ├── bash/
 └── git/
 ```
+
+---
+
+## `user_vscode`
+
+Configura extensões do VS Code para desenvolvimento.
+
+### Pré-requisitos
+
+* VS Code instalado
+* Conexão WSL/Remote SSH estabelecida pelo menos uma vez
+
+### Funcionalidades
+
+* localiza binário da CLI do VS Code Remote
+* obtém lista de extensões instaladas
+* instala extensões essenciais ausentes
+
+### Extensões instaladas
+
+* `ms-vscode-remote.remote-wsl`
+* `redhat.ansible`
+* `redhat.vscode-yaml`
+* `ms-python.python`
+* `github.copilot`
+* `eamodio.gitlens`
 
 ---
 
@@ -409,7 +484,7 @@ sudo ./scripts/bootstrap.sh
 ## 4. Executar provisionamento
 
 ```bash
-sudo -E ./scripts/provision.sh
+sudo ./scripts/provision.sh
 ```
 
 ---
@@ -419,7 +494,7 @@ sudo -E ./scripts/provision.sh
 Atualmente o projeto utiliza:
 
 ```bash
-sudo -E ./scripts/provision.sh
+sudo ./scripts/provision.sh
 ```
 
 ### Motivo
@@ -431,7 +506,6 @@ A solução adotada:
 * simplifica o bootstrap
 * reduz problemas de runtime
 * mantém boa previsibilidade operacional
-* preserva parte do contexto do usuário via `sudo -E`
 
 ### Observação importante
 
@@ -455,6 +529,10 @@ Não representa necessariamente o modelo ideal para ambientes enterprise multius
 * fail-fast
 * configuração declarativa
 * versionamento completo da workstation
+* Fully Qualified Collection Names (FQCN)
+* linting com `ansible-lint`
+* handlers para notificações
+* variáveis com prefixo de role
 
 ---
 
@@ -463,9 +541,9 @@ Não representa necessariamente o modelo ideal para ambientes enterprise multius
 ## Curto prazo
 
 * adicionar novas roles
-* configurar VSCode automaticamente
-* instalar extensões VSCode
-* configurar shell aliases
+* instalar VS Code automaticamente
+* expandir catálogo declarativo de extensões VSCode
+* configurar workspace settings do VS Code
 * adicionar role Kubernetes
 
 ## Médio prazo
@@ -474,7 +552,6 @@ Não representa necessariamente o modelo ideal para ambientes enterprise multius
 * adicionar tags Ansible
 * adicionar modo dry-run
 * adicionar CI para validação de playbooks
-* adicionar linting (`ansible-lint`)
 
 ## Longo prazo
 

@@ -1,0 +1,12 @@
+---
+- name: Atualizar cache do apt
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+
+- name: Instalar pacotes básicos
+  ansible.builtin.apt:
+    name: "{{ system_common_packages }}"
+    state: present
+  become: true

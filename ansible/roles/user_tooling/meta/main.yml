@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  role_name: user_tooling
+  author: daniel-bighelini
+  description: User tooling and developer workflow setup
+  license: MIT
+  min_ansible_version: "2.16"
+
+dependencies: []

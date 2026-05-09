@@ -1,0 +1,4 @@
+---
+user_tooling_pipx_packages:
+  - pre-commit
+  - ansible-lint

@@ -1,0 +1,32 @@
+---
+- name: Validar pipx instalado
+  ansible.builtin.command:
+    cmd: which pipx
+
+  register: user_tooling_pipx_check
+
+  changed_when: false
+
+  failed_when: user_tooling_pipx_check.rc != 0
+
+- name: Instalar ferramentas Python via pipx
+  ansible.builtin.command:
+    cmd: pipx install {{ item }}
+
+  loop: "{{ user_tooling_pipx_packages }}"
+
+  register: user_tooling_pipx_install_result
+
+  changed_when: >
+    'installed package' in user_tooling_pipx_install_result.stdout
+    or
+    'installed package' in user_tooling_pipx_install_result.stderr
+
+- name: Instalar hooks pre-commit
+  ansible.builtin.command:
+    cmd: /home/{{ ansible_user }}/.local/bin/pre-commit install
+
+  args:
+    chdir: "{{ workstation_repo }}"
+
+  changed_when: false

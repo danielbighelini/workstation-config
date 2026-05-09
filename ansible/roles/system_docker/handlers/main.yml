@@ -1,0 +1,5 @@
+---
+- name: Avisar necessidade de reiniciar sessão
+  ansible.builtin.debug:
+    msg: >
+      Reinicie a sessão do terminal/WSL para aplicar o grupo docker.

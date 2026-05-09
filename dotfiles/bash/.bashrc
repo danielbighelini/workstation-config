@@ -123,3 +123,6 @@ unset http_proxy
 unset https_proxy
 unset NO_PROXY
 unset no_proxy
+
+# Created by `pipx` on 2026-05-09 15:17:59
+export PATH="$PATH:/home/daniel-bighelini/.local/bin"
