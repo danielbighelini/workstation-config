@@ -1,0 +1,57 @@
+---
+- name: Definir PATH VSCode Remote CLI
+  set_fact:
+    vscode_cli_path: >-
+      /home/{{ ansible_user }}/.vscode-server/bin
+
+- name: Localizar binário code
+  shell: >
+    find "{{ vscode_cli_path }}"
+    -type f
+    -path "*/bin/remote-cli/code"
+    | head -n 1
+
+  register: vscode_code_binary
+
+  changed_when: false
+
+- name: Validar VSCode CLI encontrada
+  fail:
+    msg: >
+      VSCode Remote CLI não encontrada.
+      Abra o VSCode conectado ao WSL pelo menos uma vez antes do provisionamento.
+
+  when: vscode_code_binary.stdout | trim == ""
+
+- name: Obter extensões VSCode instaladas
+  command:
+    cmd: "{{ vscode_code_binary.stdout }} --list-extensions"
+
+  environment:
+    HOME: "/home/{{ ansible_user }}"
+
+  register: vscode_installed_extensions
+
+  changed_when: false
+
+- name: Definir extensões VSCode ausentes
+  set_fact:
+    vscode_missing_extensions: >-
+      {{
+        vscode_extensions
+        | difference(vscode_installed_extensions.stdout_lines)
+      }}
+
+- name: Instalar extensões VSCode ausentes
+  command:
+    cmd: "{{ vscode_code_binary.stdout }} --install-extension {{ item }}"
+
+  environment:
+    HOME: "/home/{{ ansible_user }}"
+
+  loop: "{{ vscode_missing_extensions }}"
+
+  when:
+    - vscode_missing_extensions | length > 0
+
+  register: vscode_extension_install

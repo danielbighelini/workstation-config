@@ -1,26 +1,76 @@
 # Workstation Config
 
-Repositório para provisionamento e padronização do ambiente Linux/WSL2 usando Ansible, dotfiles e scripts de bootstrap.
+Repositório para provisionamento e padronização de ambientes Linux/WSL2 utilizando:
+
+* Ansible
+* dotfiles versionados
+* scripts de bootstrap/provisionamento
+* Infrastructure as Code (IaC)
 
 O objetivo é manter uma workstation:
 
-- reproduzível
-- portátil
-- versionada
-- auditável
-- facilmente reconstruível
+* reproduzível
+* portátil
+* versionada
+* auditável
+* facilmente reconstruível
+* consistente entre máquinas
 
 ---
 
-# Visão Geral
+# Filosofia do Projeto
 
-Este projeto centraliza a configuração do ambiente de desenvolvimento em uma única base de código.
-Ele combina:
+Este projeto trata a workstation como infraestrutura declarativa.
 
-- `bootstrap.sh` para instalação inicial de pacotes básicos
-- Ansible para provisionamento declarativo
-- dotfiles versionados em `dotfiles/`
-- um wrapper de conveniência em `scripts/provision.sh`
+Em vez de configurar manualmente:
+
+* shell
+* pacotes
+* Docker
+* aliases
+* Git
+* ferramentas de desenvolvimento
+* configurações do usuário
+
+...todo o ambiente passa a ser definido em código.
+
+Isso permite:
+
+* rebuild rápido de máquinas
+* onboarding simplificado
+* versionamento da configuração
+* rollback
+* padronização operacional
+* redução de drift entre ambientes
+
+---
+
+# Arquitetura Geral
+
+O projeto é dividido em duas camadas principais:
+
+| Camada                   | Responsabilidade                           |
+| ------------------------ | ------------------------------------------ |
+| `bootstrap.sh`           | Instala dependências mínimas do sistema    |
+| `provision.sh` + Ansible | Provisionamento declarativo da workstation |
+
+---
+
+# Fluxo de Provisionamento
+
+```text
+Máquina nova
+    ↓
+Instalação WSL2/Ubuntu
+    ↓
+Clone do repositório
+    ↓
+sudo ./scripts/bootstrap.sh
+    ↓
+sudo -E ./scripts/provision.sh
+    ↓
+Workstation provisionada
+```
 
 ---
 
@@ -30,29 +80,39 @@ Ele combina:
 workstation-config/
 ├── ansible/
 │   ├── ansible.cfg
-│   ├── inventory/
-│   │   └── hosts.yml
+│   ├── group_vars/
+│   │   └── all.yml
+│   ├── inventories/
+│   │   ├── localhost/
+│   │   │   └── hosts.yml
+│   │   └── development/
+│   │       └── hosts.yml
 │   ├── playbooks/
 │   │   └── workstation.yml
 │   └── roles/
-│       ├── common/
+│       ├── system-common/
+│       │   ├── defaults/main.yml
+│       │   ├── meta/main.yml
 │       │   └── tasks/main.yml
-│       ├── dotfiles/
+│       ├── user-dotfiles/
+│       │   ├── defaults/main.yml
+│       │   ├── meta/main.yml
 │       │   └── tasks/main.yml
-│       ├── docker/
-│       │   └── tasks/main.yml
-│       └── shell/
-│           └── tasks/
+│       └── system-docker/
+│           ├── defaults/main.yml
+│           ├── meta/main.yml
+│           └── tasks/main.yml
 ├── dotfiles/
 │   ├── bash/
 │   │   ├── .bashrc
-│   │   └── .profile
+│   │   ├── .profile
+│   │   └── .bash_aliases
 │   └── git/
 │       └── .gitconfig
-├── docs/
+├── logs/
 ├── scripts/
+│   ├── bootstrap.sh
 │   └── provision.sh
-├── bootstrap.sh
 ├── .gitignore
 └── README.md
 ```
@@ -61,155 +121,375 @@ workstation-config/
 
 # Componentes Principais
 
-## `bootstrap.sh`
+## `scripts/bootstrap.sh`
 
-Instala as dependências iniciais no sistema:
+Responsável pelo bootstrap inicial da máquina.
 
-- git
-- curl
-- wget
-- unzip
-- python3
-- python3-pip
-- ansible
-- vim
-- tmux
-- jq
-- htop
+Executa:
+
+* validação de dependências
+* atualização do índice de pacotes
+* instalação de ferramentas básicas
+* logging persistente
+* validação pós-instalação
+
+### Ferramentas instaladas
+
+* git
+* curl
+* wget
+* unzip
+* python3
+* python3-pip
+* ansible
+* vim
+* tmux
+* jq
+* htop
+
+### Características
+
+* fail-fast (`set -Eeuo pipefail`)
+* logging com timestamps
+* validações de ambiente
+* execução idempotente via `apt-get`
+* output persistido em `logs/bootstrap.log`
+
+---
+
+## `scripts/provision.sh`
+
+Wrapper operacional para execução do Ansible.
+
+Responsabilidades:
+
+* validação do ambiente
+* seleção dinâmica de inventory
+* logging persistente
+* carregamento explícito do `ansible.cfg`
+* controle do contexto de execução
+* execução do playbook principal
+
+### Características
+
+* suporte a múltiplos ambientes
+* logging por ambiente
+* resolução automática de paths
+* preservação do contexto do usuário (`sudo -E`)
+* execução consistente do runtime Ansible
+
+### Execução
+
+```bash
+sudo -E ./scripts/provision.sh
+```
+
+### Ambiente customizado
+
+```bash
+sudo -E ./scripts/provision.sh development
+```
+
+---
+
+# Configuração do Ansible
 
 ## `ansible/ansible.cfg`
 
-Configura o Ansible para usar:
+Configuração central do runtime Ansible.
 
-- inventário local
-- `roles_path` em `./roles`
-- `host_key_checking = False`
-- `retry_files_enabled = False`
-- saída em YAML
-- Python 3 como interpretador padrão
+### Configurações principais
 
-> Nota: o arquivo de inventário atual está em `ansible/inventory/hosts.yml`.
-> Se o Ansible não localizar o inventário automaticamente, execute o playbook com:
->
-> ```bash
-> sudo ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/workstation.yml
-> ```
+| Configuração                  | Função                            |
+| ----------------------------- | --------------------------------- |
+| `inventory`                   | inventário padrão                 |
+| `roles_path`                  | localização das roles             |
+| `host_key_checking = False`   | desabilita validação SSH host key |
+| `retry_files_enabled = False` | desabilita retry files            |
+| `timeout`                     | timeout global                    |
+| `gather_timeout`              | timeout de facts                  |
 
----
+### Estrutura atual
 
-## Ansible Playbook Principal
+```ini
+[defaults]
 
-`ansible/playbooks/workstation.yml` define a execução local no host `localhost` e registra o repositório em:
+inventory = ./inventories/localhost/hosts.yml
+roles_path = ./roles
 
-```yaml
-workstation_repo: "{{ ansible_facts.env.HOME }}/workspace/workstation-config"
+host_key_checking = False
+retry_files_enabled = False
+
+stdout_callback = default
+
+timeout = 120
+gather_timeout = 60
 ```
 
-O playbook aplica os roles:
+---
 
-- `common`
-- `dotfiles`
-- `docker`
+# Inventories
 
-O role `shell` existe na estrutura, mas ainda não contém tarefas definidas.
+O projeto suporta múltiplos ambientes.
+
+Estrutura:
+
+```text
+inventories/
+├── localhost/
+└── development/
+```
+
+Isso permite:
+
+* separar ambientes
+* evitar alterações manuais de inventory
+* facilitar expansão futura
+* suportar múltiplos hosts
 
 ---
 
-# O que o Ansible faz hoje
+# Playbook Principal
 
-## `ansible/roles/common/tasks/main.yml`
+## `ansible/playbooks/workstation.yml`
 
-Instala os pacotes básicos:
+Playbook principal da workstation.
 
-- tree
-- net-tools
-- dnsutils
-- tcpdump
-- curl
-- jq
-- unzip
-- git
+### Responsabilidades
 
-## `ansible/roles/docker/tasks/main.yml`
+* execução local
+* carregamento das roles
+* definição de variáveis globais
 
-Provisiona o Docker Engine no Ubuntu:
+### Estrutura atual
 
-- cria `/etc/apt/keyrings`
-- adiciona chave GPG do Docker
-- adiciona repositório oficial do Docker
-- instala:
-  - docker-ce
-  - docker-ce-cli
-  - containerd.io
-  - docker-buildx-plugin
-  - docker-compose-plugin
-- inicia e habilita o serviço Docker
-- adiciona o usuário atual ao grupo `docker`
-- exibe a versão instalada do Docker
+```yaml
+- name: Configurar workstation
+  hosts: localhost
+  connection: local
 
-## `ansible/roles/dotfiles/tasks/main.yml`
+  vars:
+    workstation_repo: "{{ ansible_facts.env.HOME }}/workspace/workstation-config"
 
-Cria symlinks para os arquivos de configuração do usuário:
+  roles:
+    - system-common
+    - user-dotfiles
+    - system-docker
+```
 
-- `~/.bashrc` → `dotfiles/bash/.bashrc`
-- `~/.profile` → `dotfiles/bash/.profile`
-- `~/.bash_aliases` → `dotfiles/bash/.bash_aliases` (adicione este arquivo se desejar aliases personalizados)
-- `~/.gitconfig` → `dotfiles/git/.gitconfig`
+---
+
+# Roles
+
+## `system-common`
+
+Responsável por:
+
+* atualização de cache apt
+* instalação de pacotes básicos
+* configuração base do sistema
+
+### Pacotes atuais
+
+* tree
+* net-tools
+* dnsutils
+* tcpdump
+* curl
+* jq
+* unzip
+* git
+
+---
+
+## `system-docker`
+
+Provisiona Docker Engine no Ubuntu.
+
+### O que faz
+
+* cria `/etc/apt/keyrings`
+* adiciona chave GPG oficial Docker
+* adiciona repositório oficial Docker
+* instala:
+
+  * docker-ce
+  * docker-ce-cli
+  * containerd.io
+  * docker-buildx-plugin
+  * docker-compose-plugin
+* habilita serviço Docker
+* adiciona usuário ao grupo `docker`
+* valida instalação
+
+---
+
+## `user-dotfiles`
+
+Gerencia configuração do usuário.
+
+### Cria symlinks para
+
+* `~/.bashrc`
+* `~/.profile`
+* `~/.bash_aliases`
+* `~/.gitconfig`
+
+### Origem dos arquivos
+
+```text
+dotfiles/
+├── bash/
+└── git/
+```
 
 ---
 
 # Dotfiles
 
-Os arquivos versionados atualmente são:
+Os dotfiles são versionados no repositório.
 
-- `dotfiles/bash/.bashrc`
-- `dotfiles/bash/.profile`
-- `dotfiles/git/.gitconfig`
+### Arquivos atuais
 
-Se quiser adicionar aliases permanentes, crie `dotfiles/bash/.bash_aliases`.
+* `dotfiles/bash/.bashrc`
+* `dotfiles/bash/.profile`
+* `dotfiles/bash/.bash_aliases`
+* `dotfiles/git/.gitconfig`
 
 ---
 
-# Uso
+# Logging
 
-## Clonar o repositório
+Os scripts geram logs persistentes.
+
+### Localização
+
+```text
+logs/
+```
+
+### Arquivos
+
+| Arquivo           | Descrição                |
+| ----------------- | ------------------------ |
+| `bootstrap.log`   | execução bootstrap       |
+| `provision-*.log` | execução provisionamento |
+
+---
+
+# Como Usar
+
+## 1. Instalar WSL2
+
+No Windows:
+
+```powershell
+wsl --install
+```
+
+---
+
+## 2. Clonar repositório
 
 ```bash
 git clone git@github.com:SEU_USUARIO/workstation-config.git
 cd workstation-config
 ```
 
-## Executar bootstrap inicial
+---
+
+## 3. Executar bootstrap
 
 ```bash
-chmod +x bootstrap.sh
-./bootstrap.sh
-```
-
-## Executar provisionamento Ansible
-
-```bash
-sudo ansible-playbook ansible/playbooks/workstation.yml
-```
-
-ou, opcionalmente:
-
-```bash
-./scripts/provision.sh
+sudo ./scripts/bootstrap.sh
 ```
 
 ---
 
-# Recomendações de manutenção
+## 4. Executar provisionamento
 
-- Mantenha o repositório atualizado com `git pull`
-- Atualize os dotfiles e role de Ansible juntos
-- Verifique se o inventário está no caminho correto antes de rodar o playbook
+```bash
+sudo -E ./scripts/provision.sh
+```
+
+---
+
+# Filosofia de Privilégio
+
+Atualmente o projeto utiliza:
+
+```bash
+sudo -E ./scripts/provision.sh
+```
+
+### Motivo
+
+No ambiente WSL/local workstation, o fluxo de `become` interativo do Ansible apresentou problemas de TTY/pseudo-terminal.
+
+A solução adotada:
+
+* simplifica o bootstrap
+* reduz problemas de runtime
+* mantém boa previsibilidade operacional
+* preserva parte do contexto do usuário via `sudo -E`
+
+### Observação importante
+
+Este modelo é aceitável para:
+
+* WSL local
+* laboratório pessoal
+* workstation individual
+
+Não representa necessariamente o modelo ideal para ambientes enterprise multiusuário.
+
+---
+
+# Boas Práticas Aplicadas
+
+* Infrastructure as Code
+* modularização via roles
+* inventories separados por ambiente
+* logging persistente
+* paths dinâmicos
+* fail-fast
+* configuração declarativa
+* versionamento completo da workstation
+
+---
+
+# Recomendações Futuras
+
+## Curto prazo
+
+* adicionar novas roles
+* configurar VSCode automaticamente
+* instalar extensões VSCode
+* configurar shell aliases
+* adicionar role Kubernetes
+
+## Médio prazo
+
+* separar roles de sistema e usuário
+* adicionar tags Ansible
+* adicionar modo dry-run
+* adicionar CI para validação de playbooks
+* adicionar linting (`ansible-lint`)
+
+## Longo prazo
+
+* suporte multi-host
+* inventories remotos
+* integração cloud-init/Packer
+* suporte multiplataforma
+* golden images
 
 ---
 
 # Observações
 
-- O role `shell` existe, mas atualmente não possui tarefas configuradas.
-- A documentação em `docs/` está disponível para expandir com guias adicionais.
-- O `.gitignore` já ignora arquivos de cache, logs, dados do Ansible, VS Code e arquivos temporários de sistema.
+* O projeto está focado atualmente em Ubuntu/WSL2.
+* O runtime foi otimizado para workstation local.
+* O provisionamento atual assume ambiente single-user.
+* O diretório `logs/` deve permanecer ignorado no Git.
+* O projeto pode evoluir futuramente para automação enterprise mais completa.

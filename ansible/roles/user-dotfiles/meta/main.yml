@@ -1,0 +1,15 @@
+---
+galaxy_info:
+  role_name: user-dotfiles
+  author: Daniel Bighelini
+  description: Symlink dotfiles for development workstation
+  license: MIT
+  min_ansible_version: "2.10"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - all
+  galaxy_tags:
+    - dotfiles
+    - configuration
+    - development

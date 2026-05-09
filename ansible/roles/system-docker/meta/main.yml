@@ -1,0 +1,15 @@
+---
+galaxy_info:
+  role_name: system-docker
+  author: your_name
+  description: Install and configure Docker for development workstation
+  license: MIT
+  min_ansible_version: "2.10"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - all
+  galaxy_tags:
+    - docker
+    - containers
+    - development

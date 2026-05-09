@@ -9,24 +9,22 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-ANSIBLE_DIR="${BASE_DIR}/ansible"
-
-ENVIRONMENT="${1:-localhost}"
-
-PLAYBOOK="playbooks/workstation.yml"
-INVENTORY="inventories/${ENVIRONMENT}/hosts.yml"
-
 LOG_DIR="${BASE_DIR}/logs"
-LOG_FILE="${LOG_DIR}/provision-${ENVIRONMENT}.log"
+LOG_FILE="${LOG_DIR}/bootstrap.log"
 
-################################################################################
-# USER CONTEXT
-################################################################################
-
-REAL_USER="${SUDO_USER:-$USER}"
-REAL_HOME="$(getent passwd "$REAL_USER" | cut -d: -f6)"
-
-export HOME="$REAL_HOME"
+PACKAGES=(
+  git
+  curl
+  wget
+  unzip
+  python3
+  python3-pip
+  ansible
+  vim
+  tmux
+  jq
+  htop
+)
 
 ################################################################################
 # LOGGING
@@ -69,48 +67,46 @@ require_command() {
 
 log "Validando ambiente"
 
-require_command ansible-playbook
-require_command python3
-
-[[ -f "${ANSIBLE_DIR}/${PLAYBOOK}" ]] \
-  || fail "Playbook não encontrado"
-
-[[ -f "${ANSIBLE_DIR}/${INVENTORY}" ]] \
-  || fail "Inventory não encontrado"
+require_command sudo
+require_command apt-get
 
 ################################################################################
-# EXECUTION
+# APT UPDATE
 ################################################################################
 
-log "Ambiente selecionado: ${ENVIRONMENT}"
+log "Atualizando índice de pacotes"
 
-log "Usuário real detectado: ${REAL_USER}"
+sudo apt-get update
 
-pushd "$ANSIBLE_DIR" >/dev/null
+################################################################################
+# INSTALL PACKAGES
+################################################################################
 
-log "Executando provisionamento Ansible"
+log "Instalando ferramentas básicas"
 
-ANSIBLE_CONFIG=ansible.cfg \
-ansible-playbook \
-  -i "$INVENTORY" \
-  "$PLAYBOOK" \
-  -e ansible_user="$REAL_USER"
+sudo DEBIAN_FRONTEND=noninteractive \
+  apt-get install -y "${PACKAGES[@]}"
 
-popd >/dev/null
+################################################################################
+# VALIDATION
+################################################################################
+
+log "Validando instalações"
+
+for pkg in git python3 ansible jq htop; do
+  command -v "$pkg" >/dev/null 2>&1 \
+    || fail "Falha na instalação de: $pkg"
+done
 
 ################################################################################
 # SUMMARY
 ################################################################################
 
-log "Provisionamento concluído com sucesso"
+log "Bootstrap concluído com sucesso"
 
 echo
-echo "Playbook executado:"
-echo "${ANSIBLE_DIR}/${PLAYBOOK}"
-
-echo
-echo "Inventory utilizado:"
-echo "${ANSIBLE_DIR}/${INVENTORY}"
+echo "Ferramentas instaladas:"
+printf ' - %s\n' "${PACKAGES[@]}"
 
 echo
 echo "Log salvo em:"
