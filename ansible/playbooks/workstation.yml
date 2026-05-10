@@ -10,6 +10,7 @@
 
   roles:
     - role: system_common
+    - role: system_wsl
     - role: system_docker
     - role: system_powershell
 

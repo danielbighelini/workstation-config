@@ -1,0 +1,16 @@
+---
+- name: Mask getty tty1 no WSL
+  ansible.builtin.systemd:
+    name: getty@tty1.service
+    masked: true
+
+  when:
+    - ansible_virtualization_type == "wsl"
+
+- name: Mask console-getty no WSL
+  ansible.builtin.systemd:
+    name: console-getty.service
+    masked: true
+
+  when:
+    - ansible_virtualization_type == "wsl"
