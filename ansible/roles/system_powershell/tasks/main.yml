@@ -1,6 +1,17 @@
 ---
-- name: Instalar dependencias PowerShell
+- name: Carregar variaveis da distribuicao
+  ansible.builtin.include_vars:
+    file: "{{ role_path }}/vars/{{ ansible_distribution }}.yml"
 
+- name: Validar URL PowerShell definida
+  ansible.builtin.assert:
+    that:
+      - system_powershell_repo_url is defined
+
+    fail_msg: >-
+      Variaveis da distribuicao nao carregadas corretamente.
+
+- name: Instalar dependencias PowerShell
   ansible.builtin.apt:
     name:
       - wget
@@ -10,26 +21,20 @@
     update_cache: true
 
 - name: Baixar repositorio Microsoft
-
   ansible.builtin.get_url:
     url: "{{ system_powershell_repo_url }}"
     dest: "{{ system_powershell_repo_package }}"
     mode: '0644'
 
 - name: Registrar repositorio Microsoft
-
-  ansible.builtin.command:
-    cmd: dpkg -i {{ system_powershell_repo_package }}
-
-  changed_when: false
+  ansible.builtin.apt:
+    deb: "{{ system_powershell_repo_package }}"
 
 - name: Atualizar cache apt
-
   ansible.builtin.apt:
     update_cache: true
 
 - name: Instalar PowerShell
-
   ansible.builtin.apt:
     name: "{{ system_powershell_packages }}"
     state: present

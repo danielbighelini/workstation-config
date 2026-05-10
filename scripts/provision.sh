@@ -11,8 +11,6 @@ BASE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 ANSIBLE_DIR="${BASE_DIR}/ansible"
 
-ENVIRONMENT="${1:-localhost}"
-
 PLAYBOOK="playbooks/workstation.yml"
 INVENTORY="inventories/localhost/hosts.yml"
 
