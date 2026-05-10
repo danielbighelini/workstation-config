@@ -3,41 +3,55 @@
   ansible.builtin.include_vars:
     file: "{{ role_path }}/vars/{{ ansible_distribution }}.yml"
 
-- name: Validar URL PowerShell definida
+- name: Validar repositorio PowerShell definido
   ansible.builtin.assert:
     that:
-      - system_powershell_repo_url is defined
-
-    fail_msg: >-
-      Variaveis da distribuicao nao carregadas corretamente.
+      - system_powershell_repo is defined
 
 - name: Instalar dependencias PowerShell
   ansible.builtin.apt:
     name:
       - wget
+      - gpg
       - apt-transport-https
 
     state: present
     update_cache: true
 
-- name: Baixar repositorio Microsoft
+- name: Criar diretorio keyrings
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Baixar chave Microsoft
   ansible.builtin.get_url:
-    url: "{{ system_powershell_repo_url }}"
-    dest: "{{ system_powershell_repo_package }}"
+    url: "{{ system_powershell_gpg_url }}"
+    dest: /etc/apt/keyrings/microsoft.asc
     mode: '0644'
 
-- name: Registrar repositorio Microsoft
-  ansible.builtin.apt:
-    deb: "{{ system_powershell_repo_package }}"
+- name: Converter chave Microsoft
+  ansible.builtin.shell: |
+    set -o pipefail
+    cat /etc/apt/keyrings/microsoft.asc | \
+    gpg --dearmor | \
+    tee /etc/apt/keyrings/microsoft.gpg > /dev/null
 
-- name: Atualizar cache apt
-  ansible.builtin.apt:
-    update_cache: true
+  args:
+    creates: /etc/apt/keyrings/microsoft.gpg
+    executable: /bin/bash
+
+- name: Adicionar repositorio Microsoft
+  ansible.builtin.apt_repository:
+    repo: "{{ system_powershell_repo }}"
+    state: present
+    filename: microsoft-prod
 
 - name: Instalar PowerShell
   ansible.builtin.apt:
     name: "{{ system_powershell_packages }}"
     state: present
+    update_cache: true
 
 - name: Validar PowerShell instalado
   ansible.builtin.command:

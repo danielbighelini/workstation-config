@@ -1,3 +1,6 @@
 ---
-system_powershell_repo_url: >-
-  https://packages.microsoft.com/config/ubuntu/{{ ansible_distribution_version }}/packages-microsoft-prod.deb
+system_powershell_repo: >-
+  deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg]
+  https://packages.microsoft.com/ubuntu/{{ ansible_distribution_version }}/prod
+  {{ ansible_distribution_release }}
+  main

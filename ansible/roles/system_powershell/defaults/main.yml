@@ -1,6 +1,6 @@
 ---
-system_powershell_repo_package: >-
-  /tmp/packages-microsoft-prod.deb
+system_powershell_gpg_url: >-
+  https://packages.microsoft.com/keys/microsoft.asc
 
 system_powershell_packages:
   - powershell

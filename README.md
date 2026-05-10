@@ -517,7 +517,7 @@ cd workstation-config
 ## 3. Executar bootstrap
 
 ```bash
-sudo ./scripts/bootstrap.sh
+./scripts/bootstrap.sh
 ```
 
 ---
@@ -525,7 +525,7 @@ sudo ./scripts/bootstrap.sh
 ## 4. Executar provisionamento
 
 ```bash
-sudo ./scripts/provision.sh
+./scripts/provision.sh
 ```
 
 ---
@@ -535,28 +535,17 @@ sudo ./scripts/provision.sh
 Atualmente o projeto utiliza:
 
 ```bash
-sudo ./scripts/provision.sh
+./scripts/provision.sh
 ```
 
-### Motivo
+## Compatibilidade Debian
 
-No ambiente WSL/local workstation, o fluxo de `become` interativo do Ansible pode apresentar problemas de TTY/pseudo-terminal.
+Atualmente o repositório Microsoft PowerShell para Debian 13 (trixie)
+ainda apresenta inconsistências de assinatura GPG.
 
-A solução adotada:
-
-* simplifica o bootstrap
-* reduz problemas de runtime
-* mantém boa previsibilidade operacional
-
-### Observação importante
-
-Este modelo é aceitável para:
-
-* WSL local
-* laboratório pessoal
-* workstation individual
-
-Não representa necessariamente o modelo ideal para ambientes enterprise multiusuário.
+Por compatibilidade e estabilidade operacional,
+o provisioning utiliza temporariamente o repositório Debian 12 (bookworm)
+para instalação do PowerShell em ambientes Debian testing/trixie.
 
 ---
 
