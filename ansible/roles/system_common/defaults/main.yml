@@ -1,12 +1,13 @@
 ---
 # defaults file for system_common role
+
 system_common_packages:
   - tree
   - net-tools
   - dnsutils
   - tcpdump
-  - curl
   - jq
   - unzip
-  - git
-  - pipx
+  - vim
+  - tmux
+  - htop

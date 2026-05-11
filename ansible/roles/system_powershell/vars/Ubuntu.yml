@@ -1,6 +1,14 @@
 ---
+## system_powershell_repo: >-
+##  deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg]
+##  https://packages.microsoft.com/ubuntu/{{ ansible_facts['distribution_version'] }}/prod
+##  {{ ansible_facts['distribution_release'] }}
+##  main
+
+## A package hardcoded foi incluida abaixo porque a Microsoft
+## ainda NÃO suporta oficialmente Ubuntu 26.04.
 system_powershell_repo: >-
   deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg]
-  https://packages.microsoft.com/ubuntu/{{ ansible_distribution_version }}/prod
-  {{ ansible_distribution_release }}
+  https://packages.microsoft.com/ubuntu/24.04/prod
+  noble
   main

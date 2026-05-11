@@ -5,7 +5,7 @@
     masked: true
 
   when:
-    - ansible_virtualization_type == "wsl"
+    - ansible_facts['virtualization_type'] == "wsl"
 
 - name: Mask console-getty no WSL
   ansible.builtin.systemd:
@@ -13,4 +13,4 @@
     masked: true
 
   when:
-    - ansible_virtualization_type == "wsl"
+    - ansible_facts['virtualization_type'] == "wsl"

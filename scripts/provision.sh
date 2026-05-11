@@ -101,7 +101,7 @@ ansible-playbook \
   -i "$INVENTORY" \
   "$PLAYBOOK" \
   -e ansible_user="$REAL_USER" \
-  --ask-become-pass \
+  -c local \
   "$@"
 
 popd >/dev/null

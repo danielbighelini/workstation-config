@@ -50,10 +50,10 @@ Isso permite:
 
 O projeto é dividido em duas camadas principais:
 
-| Camada                   | Responsabilidade                           |
-| ------------------------ | ------------------------------------------ |
-| `scripts/bootstrap.sh`   | Instala dependências mínimas do sistema    |
-| `scripts/provision.sh`   | Executa o Ansible com inventories e logging |
+| Camada                 | Responsabilidade                                        |
+| ---------------------- | ------------------------------------------------------- |
+| `scripts/bootstrap.sh` | Prepara runtime local, privilege model e tooling Python |
+| `scripts/provision.sh` | Executa convergência declarativa via Ansible            |
 
 ---
 
@@ -66,9 +66,9 @@ Instalação WSL2/Ubuntu
     ↓
 Clone do repositório
     ↓
-sudo ./scripts/bootstrap.sh
+./scripts/bootstrap.sh
     ↓
-sudo ./scripts/provision.sh
+./scripts/provision.sh
     ↓
 Workstation provisionada
 ```
@@ -92,34 +92,12 @@ workstation-config/
 │   │   └── workstation.yml
 │   └── roles/
 │       ├── system_common/
-│       │   ├── defaults/main.yml
-│       │   ├── meta/main.yml
-│       │   └── tasks/main.yml
+│       ├── system_wsl/
 │       ├── system_docker/
-│       │   ├── defaults/main.yml
-│       │   ├── handlers/main.yml
-│       │   ├── meta/main.yml
-│       │   └── tasks/main.yml
 │       ├── system_powershell/
-│       │   ├── defaults/main.yml
-│       │   ├── meta/main.yml
-│       │   └── tasks/main.yml
 │       ├── user_dotfiles/
-│       │   ├── defaults/main.yml
-│       │   ├── meta/main.yml
-│       │   └── tasks/main.yml
-│       ├── user_tooling/
-│       │   ├── defaults/main.yml
-│       │   ├── meta/main.yml
-│       │   └── tasks/main.yml
-
+│       └── user_tooling/
 ├── dotfiles/
-│   ├── bash/
-│   │   ├── .bashrc
-│   │   ├── .profile
-│   │   └── .bash_aliases
-│   └── git/
-│       └── .gitconfig
 ├── logs/
 ├── scripts/
 │   ├── bootstrap.sh
@@ -130,22 +108,13 @@ workstation-config/
 │   ├── install-wsl.ps1
 │   └── README.md
 ├── .gitignore
+├── .pre-commit-config.yaml
 └── README.md
 ```
 
-### Diretório `.ansible/`
-
-Diretório local do Ansible para armazenar:
-
-* `collections/`: coleções Ansible Galaxy instaladas localmente
-* `modules/`: módulos customizados
-* `roles/`: roles Ansible Galaxy instaladas localmente
-
-Este diretório permite isolamento de dependências Ansible específicas do projeto.
-
 ---
 
-# Componentes Principais
+# Bootstrap
 
 ## `scripts/bootstrap.sh`
 
@@ -153,35 +122,72 @@ Responsável pelo bootstrap inicial da máquina.
 
 Executa:
 
-* validação de dependências
+* validação do ambiente
+* configuração de passwordless sudo
 * atualização do índice de pacotes
-* instalação de ferramentas básicas
+* instalação de runtime base
+* instalação de tooling Python via `pipx`
+* preparação do runtime Ansible
 * logging persistente
 * validação pós-instalação
 
-### Ferramentas instaladas
+---
+
+## Runtime Base Instalado
+
+Pacotes instalados via `apt`:
 
 * git
 * curl
-* wget
-* unzip
 * python3
 * python3-pip
-* ansible
-* vim
-* tmux
-* jq
-* htop
+* pipx
+* shellcheck
 
-### Características
+---
+
+## Tooling Python
+
+Ferramentas instaladas via `pipx`:
+
+* ansible-core
+* ansible-lint
+* yamllint
+* pre-commit
+
+---
+
+## Características
 
 * fail-fast (`set -Eeuo pipefail`)
 * logging com timestamps
-* validações de ambiente
-* execução idempotente via `apt-get`
+* validação de ambiente
+* bootstrap idempotente
+* runtime Python isolado via `pipx`
+* preparação explícita de cache/runtime Ansible
 * output persistido em `logs/bootstrap.log`
 
 ---
+
+# Runtime Python e Tooling
+
+O projeto utiliza `pipx` para isolamento do tooling Python:
+
+* ansible-core
+* ansible-lint
+* pre-commit
+* yamllint
+
+Motivações:
+
+* evitar dependência de pacotes defasados da distribuição
+* manter compatibilidade entre tooling e collections modernas
+* garantir consistência entre distros
+* reduzir conflitos entre runtime Python do sistema e tooling DevOps
+
+---
+
+# Provisionamento
 
 ## `scripts/provision.sh`
 
@@ -190,30 +196,36 @@ Wrapper operacional para execução do Ansible.
 Responsabilidades:
 
 * validação do ambiente
+* instalação de collections Ansible
 * seleção dinâmica de inventory
 * logging persistente
 * carregamento explícito do `ansible.cfg`
-* preservação do contexto do usuário real (`sudo`)
+* preservação do contexto do usuário real
 * execução do playbook principal
 
-### Características
+---
+
+## Características
 
 * suporte a múltiplos ambientes
 * logging por ambiente
 * resolução automática de paths
+* runtime Ansible determinístico
+* instalação automática de collections
 * preservação do contexto do usuário (`SUDO_USER`)
-* execução consistente do runtime Ansible
 
-### Execução
+---
+
+## Execução
 
 ```bash
-sudo ./scripts/provision.sh
+./scripts/provision.sh
 ```
 
 ### Ambiente customizado
 
 ```bash
-sudo ./scripts/provision.sh development
+./scripts/provision.sh development
 ```
 
 ---
@@ -224,19 +236,6 @@ sudo ./scripts/provision.sh development
 
 Configuração central do runtime Ansible.
 
-### Configurações principais
-
-| Configuração                  | Função                            |
-| ----------------------------- | --------------------------------- |
-| `inventory`                   | inventário padrão                 |
-| `roles_path`                  | localização das roles             |
-| `host_key_checking = False`   | desabilita validação SSH host key |
-| `retry_files_enabled = False` | desabilita retry files            |
-| `stdout_callback = default`   | saída padrão                      |
-| `result_format = yaml`        | formatação legível de resultados  |
-| `timeout`                     | timeout global                    |
-| `gather_timeout`              | timeout de facts                  |
-
 ### Estrutura atual
 
 ```ini
@@ -244,6 +243,7 @@ Configuração central do runtime Ansible.
 
 inventory = ./inventories/localhost/hosts.yml
 roles_path = ./roles
+collections_paths = ./collections
 host_key_checking = False
 retry_files_enabled = False
 stdout_callback = default
@@ -281,11 +281,10 @@ Isso permite:
 
 Variáveis aplicáveis a todos os hosts.
 
-### Configurações atuais
+### Estrutura atual
 
 ```yaml
 ---
-# Global variables for all hosts
 ansible_python_interpreter: /usr/bin/python3
 ```
 
@@ -297,15 +296,10 @@ ansible_python_interpreter: /usr/bin/python3
 
 Playbook principal da workstation.
 
-### Responsabilidades
-
-* execução local
-* carregamento das roles
-* definição de variáveis de repositório
-
 ### Estrutura atual
 
 ```yaml
+---
 - name: Configurar system-space
   hosts: localhost
   connection: local
@@ -315,6 +309,7 @@ Playbook principal da workstation.
 
   roles:
     - role: system_common
+    - role: system_wsl
     - role: system_docker
     - role: system_powershell
 
@@ -342,8 +337,7 @@ Playbook principal da workstation.
 Responsável por:
 
 * atualização de cache apt
-* instalação de pacotes básicos
-* configuração base do sistema
+* instalação de ferramentas operacionais básicas
 
 ### Pacotes atuais
 
@@ -351,15 +345,32 @@ Responsável por:
 * net-tools
 * dnsutils
 * tcpdump
-* curl
 * jq
 * unzip
-* git
-* pipx
+* vim
+* tmux
+* htop
+
+---
+
+## `system_wsl`
+
+Responsável por ajustes específicos do runtime WSL2.
+
+### O que faz
+
+* mask `getty@tty1.service`
+* mask `console-getty.service`
+
+### Objetivo
+
+Evitar serviços desnecessários de TTY em ambientes WSL2.
+
+---
 
 ## `system_docker`
 
-Provisiona Docker Engine no Ubuntu.
+Provisiona Docker Engine.
 
 ### O que faz
 
@@ -367,6 +378,7 @@ Provisiona Docker Engine no Ubuntu.
 * adiciona chave GPG oficial Docker
 * adiciona repositório oficial Docker
 * instala:
+
   * docker-ce
   * docker-ce-cli
   * containerd.io
@@ -378,19 +390,24 @@ Provisiona Docker Engine no Ubuntu.
 
 ### Handlers
 
-* `Avisar necessidade de reiniciar sessão`: Notifica quando o usuário precisa reiniciar a sessão para aplicar mudanças no grupo docker
+* notificação de reinício de sessão para atualização do grupo `docker`
+
+---
 
 ## `system_powershell`
 
-Instala e valida o PowerShell no Ubuntu.
+Provisiona PowerShell via repositório oficial Microsoft.
 
 ### O que faz
 
-* instala dependências de repositório
-* baixa e registra o pacote Microsoft para APT
-* atualiza cache apt
-* instala `powershell`
-* valida a instalação e exibe a versão
+* cria `/etc/apt/keyrings`
+* baixa chave GPG Microsoft
+* converte explicitamente keyring GPG
+* adiciona repositório APT Microsoft
+* instala PowerShell
+* valida instalação
+
+---
 
 ## `user_dotfiles`
 
@@ -411,20 +428,23 @@ dotfiles/
 └── git/
 ```
 
+---
+
 ## `user_tooling`
 
-Instala ferramentas de desenvolvimento Python e hook de git no contexto do usuário.
+Instala tooling Python e hooks Git no contexto do usuário.
 
 ### O que faz
 
-* valida se `pipx` está instalado
-* instala pacotes Python via `pipx`
-* instala hooks do `pre-commit` no repositório
+* valida `pipx`
+* instala ferramentas Python via `pipx`
+* instala hooks `pre-commit`
 
-### Ferramentas instaladas
+### Ferramentas atuais
 
-* `pre-commit`
-* `ansible-lint`
+* pre-commit
+* ansible-lint
+* yamllint
 
 ---
 
@@ -460,27 +480,76 @@ logs/
 
 ---
 
-# Windows Setup
+# Filosofia de Privilégio
 
-Para usuários Windows, o projeto inclui scripts PowerShell para pre-bootstrap no host antes de instalar o WSL2.
+O projeto utiliza passwordless sudo configurado durante o bootstrap inicial.
 
-## Scripts Disponíveis
+Motivações:
 
-* `windows/bootstrap.ps1`: Instala dependências base no Windows.
-* `windows/install-packages.ps1`: Instala ferramentas adicionais.
-* `windows/install-wsl.ps1`: Instala e configura WSL2 automaticamente.
+* compatibilidade com `sudo-rs`
+* execução não-interativa do Ansible
+* previsibilidade operacional
+* eliminação de dependência de prompts interativos
 
-## Como Usar
+O bootstrap configura automaticamente:
 
-Execute os scripts em ordem no PowerShell como administrador:
-
-```powershell
-.\windows\bootstrap.ps1
-.\windows\install-packages.ps1
-.\windows\install-wsl.ps1
+```text
+/etc/sudoers.d/workstation
 ```
 
-Isso prepara o host Windows para o ambiente WSL2.
+com validação via:
+
+```bash
+visudo -cf
+```
+
+---
+
+# Compatibilidade Ubuntu 26+
+
+Versões recentes do Ubuntu introduziram o `sudo-rs`,
+o que atualmente pode causar incompatibilidades parciais
+com o mecanismo `become` do Ansible.
+
+O projeto utiliza passwordless sudo durante o bootstrap
+para garantir compatibilidade operacional consistente.
+
+---
+
+# Compatibilidade PowerShell Microsoft Repositories
+
+Atualmente os repositórios Microsoft PowerShell
+ainda apresentam inconsistências de assinatura GPG
+em distribuições bleeding-edge:
+
+* Debian 13 (trixie)
+* Ubuntu 26.04 (resolute)
+
+Por estabilidade operacional,
+o projeto utiliza temporariamente fallbacks:
+
+| Distro atual | Repositório utilizado |
+| ------------ | --------------------- |
+| Debian 13    | Debian 12/bookworm    |
+| Ubuntu 26.04 | Ubuntu 24.04/noble    |
+
+Isso preserva:
+
+* apt-secure
+* validação GPG
+* integridade do provisioning
+
+---
+
+# Windows Setup
+
+Para usuários Windows, o projeto inclui scripts PowerShell para pre-bootstrap no host antes da instalação do WSL2.
+
+## Scripts disponíveis
+
+* `windows/bootstrap.ps1`
+* `windows/install-packages.ps1`
+* `windows/install-wsl.ps1`
 
 ---
 
@@ -488,16 +557,13 @@ Isso prepara o host Windows para o ambiente WSL2.
 
 ## 1. Preparar Windows (Opcional)
 
-Para setup automático com PowerShell:
-
 ```powershell
-cd workstation-config
 .\windows\bootstrap.ps1
 .\windows\install-packages.ps1
 .\windows\install-wsl.ps1
 ```
 
-Ou instalar WSL2 manualmente:
+Ou:
 
 ```powershell
 wsl --install
@@ -509,6 +575,7 @@ wsl --install
 
 ```bash
 git clone git@github.com:SEU_USUARIO/workstation-config.git
+
 cd workstation-config
 ```
 
@@ -530,38 +597,20 @@ cd workstation-config
 
 ---
 
-# Filosofia de Privilégio
-
-Atualmente o projeto utiliza:
-
-```bash
-./scripts/provision.sh
-```
-
-## Compatibilidade Debian
-
-Atualmente o repositório Microsoft PowerShell para Debian 13 (trixie)
-ainda apresenta inconsistências de assinatura GPG.
-
-Por compatibilidade e estabilidade operacional,
-o provisioning utiliza temporariamente o repositório Debian 12 (bookworm)
-para instalação do PowerShell em ambientes Debian testing/trixie.
-
----
-
 # Boas Práticas Aplicadas
 
 * Infrastructure as Code
 * modularização via roles
 * inventories separados por ambiente
 * logging persistente
-* paths dinâmicos
 * fail-fast
 * configuração declarativa
+* runtime determinístico
 * versionamento completo da workstation
 * Fully Qualified Collection Names (FQCN)
 * linting com `ansible-lint`
-* handlers para notificações
+* hooks `pre-commit`
+* isolamento Python via `pipx`
 * variáveis com prefixo de role
 
 ---
@@ -570,31 +619,32 @@ para instalação do PowerShell em ambientes Debian testing/trixie.
 
 ## Curto prazo
 
-* adicionar novas roles
-* expandir catálogo declarativo de extensões VSCode
-* configurar workspace settings do VS Code
-* adicionar role Kubernetes
+* catálogo declarativo de extensões VSCode
+* role Kubernetes
+* tags Ansible
+* Makefile operacional
 
 ## Médio prazo
 
-* separar roles de sistema e usuário
-* adicionar tags Ansible
-* adicionar modo dry-run
-* adicionar CI para validação de playbooks
+* CI GitHub Actions
+* validação automatizada de bootstrap
+* inventories remotos
+* dry-run mode
+* separation por domínio operacional
 
 ## Longo prazo
 
 * suporte multi-host
-* inventories remotos
 * integração cloud-init/Packer
-* suporte multiplataforma
 * golden images
+* suporte multiplataforma
+* provisioning híbrido cloud/local
 
 ---
 
 # Documentação Adicional
 
-* [Windows Setup Guide](./windows/README.md) - Scripts PowerShell para setup nativo Windows
+* [Windows Setup Guide](./windows/README.md)
 
 ---
 
@@ -604,4 +654,5 @@ para instalação do PowerShell em ambientes Debian testing/trixie.
 * O runtime foi otimizado para workstation local.
 * O provisionamento atual assume ambiente single-user.
 * O diretório `logs/` deve permanecer ignorado no Git.
+* O projeto utiliza runtime Python isolado via `pipx`.
 * O projeto pode evoluir futuramente para automação enterprise mais completa.
