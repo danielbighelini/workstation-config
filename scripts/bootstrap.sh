@@ -24,9 +24,6 @@ PACKAGES=(
 
 PYTHON_TOOLS=(
   ansible-core
-  ansible-lint
-  yamllint
-  pre-commit
 )
 
 ################################################################################
@@ -151,10 +148,15 @@ sudo DEBIAN_FRONTEND=noninteractive \
 log "Configurando pipx"
 
 # shellcheck disable=SC2016
-grep -qxF 'export PATH="$HOME/.local/bin:$PATH"' ~/.bashrc || \
-  echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+if ! grep -qF '$HOME/.local/bin' ~/.bashrc; then
 
-export PATH="$HOME/.local/bin:$PATH"
+  {
+    echo
+    echo '# Criado por bootstrap.sh do projeto workstation-config'
+    echo 'export PATH="$HOME/.local/bin:$PATH"'
+  } >> ~/.bashrc
+
+fi
 
 ################################################################################
 # INSTALL/UPGRADE PYTHON TOOLING
@@ -209,7 +211,6 @@ for tool in "${PYTHON_TOOLS[@]}"; do
   pipx list --short | grep -q "^${tool} " \
     || fail "Tool Python não instalada: $tool"
 done
-
 
 ################################################################################
 # SUMMARY

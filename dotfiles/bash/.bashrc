@@ -124,10 +124,6 @@ unset https_proxy
 unset NO_PROXY
 unset no_proxy
 
-# Created by `pipx` on 2026-05-09 15:17:59
-export PATH="$PATH:/home/daniel-bighelini/.local/bin"
-
-
 # SSH agent
 
 export SSH_AUTH_SOCK="$HOME/.ssh/ssh-agent.sock"
@@ -157,4 +153,6 @@ if [ -f "$HOME/.ssh/id_ed25519" ]; then
     fi
 fi
 
+
+# Criado por bootstrap.sh do projeto workstation-config
 export PATH="$HOME/.local/bin:$PATH"
