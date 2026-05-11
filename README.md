@@ -84,9 +84,7 @@ workstation-config/
 │   ├── group_vars/
 │   │   └── all.yml
 │   ├── inventories/
-│   │   ├── localhost/
-│   │   │   └── hosts.yml
-│   │   └── development/
+│   │   └── localhost/
 │   │       └── hosts.yml
 │   ├── playbooks/
 │   │   └── workstation.yml
@@ -207,8 +205,8 @@ Responsabilidades:
 
 ## Características
 
-* suporte a múltiplos ambientes
-* logging por ambiente
+* inventário localhost fixo
+* logging persistente
 * resolução automática de paths
 * runtime Ansible determinístico
 * instalação automática de collections
@@ -222,11 +220,7 @@ Responsabilidades:
 ./scripts/provision.sh
 ```
 
-### Ambiente customizado
-
-```bash
-./scripts/provision.sh development
-```
+> Observação: O script `scripts/provision.sh` atualmente usa apenas o inventário `localhost`.
 
 ---
 
@@ -262,8 +256,7 @@ Estrutura:
 
 ```text
 inventories/
-├── localhost/
-└── development/
+└── localhost/
 ```
 
 Isso permite:
@@ -316,9 +309,6 @@ Playbook principal da workstation.
 - name: Configurar user-space
   hosts: localhost
   connection: local
-
-  become: true
-  become_user: "{{ ansible_user }}"
 
   vars:
     workstation_repo: "/home/{{ ansible_user }}/workspace/workstation-config"
@@ -483,6 +473,7 @@ logs/
 # Filosofia de Privilégio
 
 O projeto utiliza passwordless sudo configurado durante o bootstrap inicial.
+Isso garante que o Ansible possa executar ações privilegiadas sem prompts de senha em playbooks locais, reduzindo a necessidade de `become` em tarefas que já rodam no contexto do usuário real.
 
 Motivações:
 
@@ -538,6 +529,10 @@ Isso preserva:
 * apt-secure
 * validação GPG
 * integridade do provisioning
+
+> Nota: no Ubuntu 26.04, o projeto usa o repositório Microsoft PowerShell do Ubuntu 24.04/noble devido à falta de suporte oficial direto para 26.04.
+>
+> Essa é uma limitação conhecida do repositório Microsoft PowerShell: o suporte oficial para Ubuntu 26.04 ainda não está disponível, então o fallback 24.04/noble é usado para garantir instalação e integridade.
 
 ---
 
