@@ -15,6 +15,7 @@ LOG_FILE="${LOG_DIR}/bootstrap.log"
 PACKAGES=(
   git
   curl
+  wget
   python3
   python3-pip
   pipx
