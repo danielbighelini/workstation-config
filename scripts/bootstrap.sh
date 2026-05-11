@@ -65,13 +65,39 @@ require_command() {
 }
 
 ################################################################################
+# ERROR HANDLING
+################################################################################
+
+trap 'fail "Erro na linha ${LINENO}: comando \"${BASH_COMMAND}\" falhou"' ERR
+
+################################################################################
 # VALIDATIONS
 ################################################################################
 
 log "Validando ambiente"
 
+if [[ $EUID -eq 0 ]]; then
+  fail "Não execute este script como root"
+fi
+
 require_command sudo
 require_command apt-get
+
+if [[ ! -f /etc/os-release ]]; then
+  fail "Arquivo /etc/os-release não encontrado"
+fi
+
+# shellcheck disable=SC1091
+source /etc/os-release
+
+case "$ID" in
+  ubuntu|debian)
+    log "Distribuição suportada detectada: $ID"
+    ;;
+  *)
+    fail "Distribuição não suportada: $ID"
+    ;;
+esac
 
 ################################################################################
 # PASSWORDLESS SUDO
@@ -97,14 +123,15 @@ else
 
 fi
 
-
 ################################################################################
 # APT UPDATE
 ################################################################################
 
 log "Atualizando índice de pacotes"
+sudo apt-get update -o Acquire::Retries=3
 
-sudo apt-get update
+log "Atualizando pacotes"
+sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
 
 ################################################################################
 # INSTALL SYSTEM PACKAGES
@@ -113,7 +140,9 @@ sudo apt-get update
 log "Instalando ferramentas básicas"
 
 sudo DEBIAN_FRONTEND=noninteractive \
-  apt-get install -y "${PACKAGES[@]}"
+  apt-get install -y \
+  -o Acquire::Retries=3 \
+  "${PACKAGES[@]}"
 
 ################################################################################
 # CONFIGURE PIPX
@@ -121,22 +150,34 @@ sudo DEBIAN_FRONTEND=noninteractive \
 
 log "Configurando pipx"
 
-pipx ensurepath --force
+# shellcheck disable=SC2016
+grep -qxF 'export PATH="$HOME/.local/bin:$PATH"' ~/.bashrc || \
+  echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 
 export PATH="$HOME/.local/bin:$PATH"
 
 ################################################################################
-# INSTALL PYTHON TOOLING
+# INSTALL/UPGRADE PYTHON TOOLING
 ################################################################################
 
-log "Instalando tooling Python"
+log "Instalando/Atualizando tooling Python"
+
+PIPX_INSTALLED="$(pipx list --short)"
 
 for tool in "${PYTHON_TOOLS[@]}"; do
-  pipx uninstall "$tool" >/dev/null 2>&1 || true
-done
 
-for tool in "${PYTHON_TOOLS[@]}"; do
-  pipx install "$tool"
+  if grep -q "^${tool} " <<< "$PIPX_INSTALLED"; then
+
+    log "Atualizando tool Python: $tool"
+    pipx upgrade "$tool"
+
+  else
+
+    log "Instalando tool Python: $tool"
+    pipx install "$tool"
+
+  fi
+
 done
 
 ################################################################################
@@ -151,6 +192,7 @@ mkdir -p "$HOME/.cache/ansible/tmp"
 
 chmod 700 "$HOME/.ansible"
 chmod 700 "$HOME/.ansible/tmp"
+chmod 700 "$HOME/.cache/ansible/tmp"
 
 ################################################################################
 # VALIDATION
@@ -158,20 +200,16 @@ chmod 700 "$HOME/.ansible/tmp"
 
 log "Validando instalações"
 
-for cmd in \
-  git \
-  python3 \
-  pipx \
-  shellcheck \
-  ansible \
-  ansible-lint \
-  yamllint \
-  pre-commit; do
-
-  command -v "$cmd" >/dev/null 2>&1 \
-    || fail "Falha na instalação de: $cmd"
-
+for pkg in "${PACKAGES[@]}"; do
+  dpkg -s "$pkg" >/dev/null 2>&1 \
+    || fail "Pacote não instalado: $pkg"
 done
+
+for tool in "${PYTHON_TOOLS[@]}"; do
+  pipx list --short | grep -q "^${tool} " \
+    || fail "Tool Python não instalada: $tool"
+done
+
 
 ################################################################################
 # SUMMARY

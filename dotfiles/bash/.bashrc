@@ -127,11 +127,17 @@ unset no_proxy
 # Created by `pipx` on 2026-05-09 15:17:59
 export PATH="$PATH:/home/daniel-bighelini/.local/bin"
 
-# SSH agent socket fixo
+
+# SSH agent
+
 export SSH_AUTH_SOCK="$HOME/.ssh/ssh-agent.sock"
 
+mkdir -p "$HOME/.ssh"
+
 if [ -S "$SSH_AUTH_SOCK" ]; then
-    ssh-add -l >/dev/null 2>&1
+
+    SSH_AUTH_SOCK="$SSH_AUTH_SOCK" ssh-add -l >/dev/null 2>&1
+
     if [ $? -eq 2 ]; then
         rm -f "$SSH_AUTH_SOCK"
     fi
@@ -139,6 +145,16 @@ fi
 
 if [ ! -S "$SSH_AUTH_SOCK" ]; then
     eval "$(ssh-agent -a "$SSH_AUTH_SOCK")" >/dev/null
+fi
+
+if [ -f "$HOME/.ssh/id_ed25519" ]; then
+
+    SSH_AUTH_SOCK="$SSH_AUTH_SOCK" ssh-add -l >/dev/null 2>&1
+
+    if [ $? -ne 0 ]; then
+        SSH_AUTH_SOCK="$SSH_AUTH_SOCK" \
+            ssh-add "$HOME/.ssh/id_ed25519"
+    fi
 fi
 
 export PATH="$HOME/.local/bin:$PATH"
