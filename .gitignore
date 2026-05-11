@@ -6,6 +6,11 @@
 ansible/.ansible/
 ansible/collections/ansible_collections/
 
+# bash OS files
+.bashrc
+.profile
+.bash_aliases
+
 # Vault / secrets
 .vault_pass
 vault_pass.txt
