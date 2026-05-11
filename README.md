@@ -149,9 +149,6 @@ Pacotes instalados via `apt`:
 Ferramentas instaladas via `pipx`:
 
 * ansible-core
-* ansible-lint
-* yamllint
-* pre-commit
 
 ---
 
@@ -172,9 +169,6 @@ Ferramentas instaladas via `pipx`:
 O projeto utiliza `pipx` para isolamento do tooling Python:
 
 * ansible-core
-* ansible-lint
-* pre-commit
-* yamllint
 
 Motivações:
 
@@ -237,7 +231,7 @@ Configuração central do runtime Ansible.
 
 inventory = ./inventories/localhost/hosts.yml
 roles_path = ./roles
-collections_paths = ./collections
+collections_path = ./collections
 host_key_checking = False
 retry_files_enabled = False
 stdout_callback = default
@@ -250,7 +244,7 @@ gather_timeout = 60
 
 # Inventories
 
-O projeto suporta múltiplos ambientes.
+O projeto suporta atualmente apenas o ambiente localhost.
 
 Estrutura:
 
@@ -261,9 +255,7 @@ inventories/
 
 Isso permite:
 
-* separar ambientes
 * evitar alterações manuais de inventory
-* facilitar expansão futura
 * suportar múltiplos hosts
 
 ---
@@ -368,7 +360,6 @@ Provisiona Docker Engine.
 * adiciona chave GPG oficial Docker
 * adiciona repositório oficial Docker
 * instala:
-
   * docker-ce
   * docker-ce-cli
   * containerd.io
