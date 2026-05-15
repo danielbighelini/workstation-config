@@ -13,7 +13,8 @@ ANSIBLE_DIR := ansible
 	check \
 	clean \
 	info \
-	doctor
+	doctor \
+	noproxy
 
 help:
 	@echo ""
@@ -116,3 +117,13 @@ doctor:
 
 	@echo ""
 	@echo "Ambiente validado."
+
+noproxy:
+	@echo "Proxy desativado."
+	@env -u HTTP_PROXY \
+	     -u HTTPS_PROXY \
+	     -u http_proxy \
+	     -u https_proxy \
+	     -u NO_PROXY \
+	     -u no_proxy \
+		 bash
