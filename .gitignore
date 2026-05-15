@@ -5,6 +5,7 @@
 .ansible/
 ansible/.ansible/
 ansible/collections/ansible_collections/
+ansible/collections/
 
 # bash OS files
 .bashrc

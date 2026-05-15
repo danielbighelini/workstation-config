@@ -91,7 +91,7 @@ log "Instalando collections Ansible"
 
 ANSIBLE_CONFIG=ansible.cfg \
 ansible-galaxy collection install \
-  -r collections/requirements.yml \
+  -r requirements.yml \
   -p collections
 
 log "Executando provisionamento Ansible"

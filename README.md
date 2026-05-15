@@ -52,6 +52,7 @@ O projeto é dividido em duas camadas principais:
 
 | Camada                 | Responsabilidade                                        |
 | ---------------------- | ------------------------------------------------------- |
+| `Makefile`             | Orquestra bootstrap, provisionamento e validações      |
 | `scripts/bootstrap.sh` | Prepara runtime local, privilege model e tooling Python |
 | `scripts/provision.sh` | Executa convergência declarativa via Ansible            |
 
@@ -97,6 +98,7 @@ workstation-config/
 │       └── user_tooling/
 ├── dotfiles/
 ├── logs/
+├── Makefile
 ├── scripts/
 │   ├── bootstrap.sh
 │   └── provision.sh
@@ -583,6 +585,25 @@ cd workstation-config
 
 ---
 
+## 5. Usar Makefile operacional
+
+O repositório inclui um `Makefile` com alvos operacionais para bootstrap, provisionamento, instalação de collections e validações.
+
+```bash
+make bootstrap
+make provision
+make install
+make check
+```
+
+Para ver todos os alvos disponíveis:
+
+```bash
+make help
+```
+
+---
+
 # Boas Práticas Aplicadas
 
 * Infrastructure as Code
@@ -608,7 +629,6 @@ cd workstation-config
 * catálogo declarativo de extensões VSCode
 * role Kubernetes
 * tags Ansible
-* Makefile operacional
 
 ## Médio prazo
 
@@ -642,3 +662,5 @@ cd workstation-config
 * O diretório `logs/` deve permanecer ignorado no Git.
 * O projeto utiliza runtime Python isolado via `pipx`.
 * O projeto pode evoluir futuramente para automação enterprise mais completa.
+* O runtime Python utilizado pelo ansible-core depende da versão padrão de Python disponibilizada pela distribuição Linux.
+* O projeto garante compatibilidade no nível do ansible-core e collections, não exigindo versões idênticas de Python entre distribuições.
