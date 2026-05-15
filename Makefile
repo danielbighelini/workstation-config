@@ -30,6 +30,7 @@ help:
 	@echo "  make clean       - Remove artefatos temporários"
 	@echo "  make info        - Exibe informações do ambiente"
 	@echo "  make doctor      - Valida dependências do ambiente"
+	@echo "  make noproxy     - Desativa proxy"
 	@echo ""
 
 bootstrap:
