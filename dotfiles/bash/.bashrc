@@ -156,3 +156,7 @@ fi
 
 # Criado por bootstrap.sh do projeto workstation-config
 export PATH="$HOME/.local/bin:$PATH"
+
+# Redirecionado o cache do ansible-lint para o diretório temporário
+# para evitar problemas de criacao da pasta .ansible na raiz do repositorio
+export XDG_CACHE_HOME="/tmp/.cache"
