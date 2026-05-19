@@ -37,10 +37,15 @@
 
 - name: Adicionar repositório Docker
 
-  ansible.builtin.apt_repository:
-    repo: "{{ system_docker_repo }}"
+  ansible.builtin.deb822_repository:
+    name: docker
+    uris: "{{ system_docker_repo_uri }}"
+    suites: "{{ system_docker_repo_suite }}"
+    components: "{{ system_docker_repo_components }}"
+    architectures: "{{ system_docker_repo_architectures }}"
+    signed_by: "{{ system_docker_repo_signed_by }}"
+    install_python_debian: true
     state: present
-    filename: docker
 
 - name: Instalar Docker Engine
 

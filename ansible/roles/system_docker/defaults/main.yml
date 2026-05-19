@@ -17,7 +17,15 @@ system_docker_packages:
 system_docker_gpg_url: >-
   https://download.docker.com/linux/{{ system_docker_distribution }}/gpg
 
-system_docker_repo: >-
-  deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg]
+system_docker_repo_uri: >-
   https://download.docker.com/linux/{{ system_docker_distribution }}
-  {{ system_docker_release }} stable
+
+system_docker_repo_suite: "{{ system_docker_release }}"
+
+system_docker_repo_components:
+  - stable
+
+system_docker_repo_architectures:
+  - amd64
+
+system_docker_repo_signed_by: /etc/apt/keyrings/docker.gpg

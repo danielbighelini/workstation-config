@@ -7,8 +7,15 @@
 
 ## A package hardcoded foi incluida abaixo porque a Microsoft
 ## ainda NÃO suporta oficialmente Ubuntu 26.04.
-system_powershell_repo: >-
-  deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg]
+system_powershell_repo_uri: >-
   https://packages.microsoft.com/ubuntu/24.04/prod
-  noble
-  main
+
+system_powershell_repo_suite: noble
+
+system_powershell_repo_components:
+  - main
+
+system_powershell_repo_architectures:
+  - amd64
+
+system_powershell_repo_signed_by: /etc/apt/keyrings/microsoft.gpg

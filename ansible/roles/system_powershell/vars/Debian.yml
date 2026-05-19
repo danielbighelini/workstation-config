@@ -1,6 +1,13 @@
 ---
-system_powershell_repo: >-
-  deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg]
+system_powershell_repo_uri: >-
   https://packages.microsoft.com/debian/12/prod
-  bookworm
-  main
+
+system_powershell_repo_suite: bookworm
+
+system_powershell_repo_components:
+  - main
+
+system_powershell_repo_architectures:
+  - amd64
+
+system_powershell_repo_signed_by: /etc/apt/keyrings/microsoft.gpg

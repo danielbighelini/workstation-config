@@ -6,7 +6,7 @@
 - name: Validar repositorio PowerShell definido
   ansible.builtin.assert:
     that:
-      - system_powershell_repo is defined
+      - system_powershell_repo_uri is defined
 
 - name: Instalar dependencias PowerShell
   ansible.builtin.apt:
@@ -42,10 +42,15 @@
     executable: /bin/bash
 
 - name: Adicionar repositorio Microsoft
-  ansible.builtin.apt_repository:
-    repo: "{{ system_powershell_repo }}"
+  ansible.builtin.deb822_repository:
+    name: microsoft-prod
+    uris: "{{ system_powershell_repo_uri }}"
+    suites: "{{ system_powershell_repo_suite }}"
+    components: "{{ system_powershell_repo_components }}"
+    architectures: "{{ system_powershell_repo_architectures }}"
+    signed_by: "{{ system_powershell_repo_signed_by }}"
+    install_python_debian: true
     state: present
-    filename: microsoft-prod
 
 - name: Instalar PowerShell
   ansible.builtin.apt:
