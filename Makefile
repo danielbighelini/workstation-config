@@ -47,9 +47,7 @@ install:
 
 lint:
 	cd $(ANSIBLE_DIR) && \
-	ansible-lint \
-		--project-dir $$HOME/.cache/ansible-lint \
-		playbooks roles
+	ansible-lint -c .ansible-lint playbooks roles
 
 yaml:
 	yamllint ansible
